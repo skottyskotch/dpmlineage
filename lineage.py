@@ -12,7 +12,7 @@ class TableDef:
         self.name = re.findall(regex,sTableDef)[0]
         regex = re.compile(b'^:TABLE-INDEX \(([^\)]+)',re.MULTILINE)
         self.tableIndex = re.findall(regex,sTableDef)[0]
-        # regex = re.compile(b'^:OTHER-INDEXES \(\(([^\"]+)',re.MULTILINE)
+        regex = re.compile(b'^:OTHER-INDEXES(.*)$',re.MULTILINE)
         self.otherIndex = re.findall(regex,sTableDef)[0]
         self.text = sTableDef
         TableDef.instances[self.id] = self
@@ -33,4 +33,5 @@ parser.add_argument("filename", help="Dpm file name (*.dpm.gz)")
 args = parser.parse_args()
 
 processTableDef()
-print('\n'.join([value.name.decode('utf-8') + '\t' + value.tableIndex.decode('utf-8') for key, value in TableDef.instances.items()]))
+print('Table \t index \t other-index')
+print('\n'.join([value.name.decode('utf-8') + '\t' + value.tableIndex.decode('utf-8') + '\t' + value.otherIndex.decode('utf-8') for key, value in TableDef.instances.items()]))
