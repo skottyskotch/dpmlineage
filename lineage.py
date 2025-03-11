@@ -17,15 +17,20 @@ class TableDef:
         self.text = sTableDef
         TableDef.instances[self.id] = self
 
+def processTableDef():
+    if (os.path.isfile(args.filename)):
+        hTableDef = {}
+        sTableDef = b''
+        # with gzip.open(args.filename, 'rb') as dpm:
+        with gzip.open(os.path.join('raws','DPM_Final_PLW_E7_20240711T211500.dpm.gz'), 'rb') as dpm:
+            sDpm = dpm.read()
+            lTableDef = re.split(b"\(:TABLE-DEF ",sDpm)[1:-1]
+    for sTableDef in lTableDef:
+        TableDef(sTableDef)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("filename", help="Dpm file name (*.dpm.gz)")
 args = parser.parse_args()
 
-if (os.path.isfile(args.filename)):
-    hTableDef = {}
-    sTableDef = b''
-    with gzip.open(args.filename, 'rb') as dpm:
-        sDpm = dpm.read()
-        lTableDef = re.split(b"\(:TABLE-DEF ",sDpm)[1:-1]
-for sTableDef in lTableDef:
-    TableDef(sTableDef)
+processTableDef()
+print('\n'.join([value.name.decode('utf-8') + '\t' + value.tableIndex.decode('utf-8') for key, value in TableDef.instances.items()]))
