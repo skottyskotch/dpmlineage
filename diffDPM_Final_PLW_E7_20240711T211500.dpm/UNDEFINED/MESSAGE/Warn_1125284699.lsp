@@ -1,0 +1,9 @@
+
+(MESSAGE-STRING::MESSAGE
+ :OBJECT-NUMBER 1125284699
+ :NAME "Warn"
+ :DATASET 96270999
+ :ORIGIN :PROJECT
+ :PARENT 7205399
+ :VALUE #/E"Changing TimeCard profile can lead to different problems if the resource or one of its children already have time cards. Do you want to continue?"F"Changer le profil TimeCard peut entraîner différents problèmes si la ressource ou une de ses filles a déjà des feuilles de temps. Voulez-vous continuer ?"G"TimeCard-Profil-Änderungen können verschiedene Probleme nach sich ziehen, falls die Ressource oder eines ihrer untergeordneten Objekte bereits über Timecards verfügt. Trotzdem fortfahren?"I"Modificare il profilo TimeCard può provocare problemi se la risorsa o uno dei suoi figli hanno già dei fogli di lavoro. Vuoi continuare ?"D"Changing TimeCard Profile can lead to different problems if the resource or one of its children already have Time cards. Do you want to continue ?"J"Changing TimeCard Profile can lead to different problems if the resource or one of its children already have Time cards. Do you want to continue ?"S"Modificar un perfil de TimeCard puede ocasionar problemas si el recurso o uno de sus objetos subordinados ya tiene una hoja de tiempo. ¿Desea continuar?"K"Changing TimeCard Profile can lead to different problems if the resource or one of its children already have Time cards. Do you want to continue ?"C"Changing TimeCard Profile can lead to different problems if the resource or one of its children already have Time cards. Do you want to continue ?"P"Changing TimeCard Profile can lead to different problems if the resource or one of its children already have Time cards. Do you want to continue ?"R"Изменение профиля TimeCard может привести к различным проблемам, если у ресурса или у одного из его дочерних объектов уже имеется TimeCard-табель. Продолжить?"/
+)

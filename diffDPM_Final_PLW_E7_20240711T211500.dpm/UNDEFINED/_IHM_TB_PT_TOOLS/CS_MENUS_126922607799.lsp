@@ -1,0 +1,22 @@
+
+(TEMP-TABLE::_IHM_TB_PT_TOOLS
+ :OBJECT-NUMBER 126922607799
+ :NAME "CS_MENUS"
+ :COMMENT "#@data_quality.sanityCheck"
+ :DATASET 127151640799
+ :EXTERNAL-ID 0
+ :ORIGIN-NUMBER 0
+ :ORIGIN-PROJECT 0
+ :PARENT 5116171699
+ :_IHM_AA_N_TOOL_VERSION 1.0d0
+ :_IHM_TB_AA_B_CHK_VAL_LIST "0"
+ :_IHM_TB_AA_B_HIDE_BOTH_F "0"
+ :_IHM_TB_AA_B_LIST_INPUT "0"
+ :_IHM_TB_AA_B_LOM "0"
+ :_IHM_TB_AA_B_NEEDS_CHECK "0"
+ :_IHM_TB_AA_B_ONLY_VISIBLE "0"
+ :_IHM_TB_AA_B_SELECT_INPUT "0"
+ :_IHM_TB_AA_NP_SCRIPT "namespace dqamod;ÿbutton_openSanityCheckForm();ÿ//Obsolete button but for unknown reason it cannot be deleted"
+ :_IHM_TB_AA_S_FILTER "false"
+ :_IHM_TB_AA_S_TYPE "MENUS"
+)

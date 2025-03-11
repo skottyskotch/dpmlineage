@@ -1,0 +1,9 @@
+
+(TEMP-TABLE::_L1_PT_IMAGE_BANK
+ :OBJECT-NUMBER 292393741641
+ :NAME "R&D_Workpackages_Module_large"
+ :COMMENT "Icon for R&D Workpackages Module"
+ :DATASET 118057330253
+ :ORIGIN-NUMBER 0
+ :ORIGIN-PROJECT 0
+)

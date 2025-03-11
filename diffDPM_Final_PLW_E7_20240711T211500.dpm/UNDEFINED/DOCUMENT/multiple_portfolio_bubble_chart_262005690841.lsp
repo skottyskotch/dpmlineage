@@ -1,0 +1,26 @@
+
+(DOCUMENT-MANAGEMENT::DOCUMENT
+ :OBJECT-NUMBER 262005690841
+ :NAME "multiple_portfolio_bubble_chart"
+ :%CMS-CONNECTOR "DB-CONNECTOR"
+ :CONNECTED-FIELD :_RE_DF_REP_THUMBNAIL
+ :CONNECTED-TO 262005690641
+ :DATASET 118081000141
+ :FILE-SIZE 0
+ :HISTORY "
+Modifié par INTRANET le 05/28/15 avec le fichier: multiple_portfolio_bubble_chart.jpg"
+ :LAST-UPDATE-DATE 0
+ :LAST-UPDATE-PATH "multiple_portfolio_bubble_chart.jpg"
+ :LAST-UPDATE-USER "INTRANET"
+ :MAJOR-VERSION 0
+ :MD5-SUM "6dae7ee55677df37a292ea0034313b03"
+ :MINOR-VERSION 0
+ :OBJECT-ID "multiple_portfolio_bubble_chart.jpg"
+ :ORIGIN-NUMBER 0
+ :PDF-LENGTH 0
+ :STORAGE-ON-FILE-SERVER "multiple_portfolio_bubble_chart@-20@1.jpg"
+ :THUMBNAIL-LENGTH 0
+ :THUMBNAIL-PAGES 0
+ :TYPE "jpg"
+ :VERSION 1
+)

@@ -1,0 +1,107 @@
+
+(TEMP-TABLE::_GUI_PT_PANEL_TOOLS
+ :OBJECT-NUMBER 118625061399
+ :NAME "PRESENTATION-MAIN"
+ :COMMENT "#@planiswaremenu.presentation"
+ :DATASET 1238591899
+ :EXTERNAL-ID 0
+ :ORIGIN-NUMBER 0
+ :ORIGIN-PROJECT 0
+ :PARENT 0
+ :_GUI_AA_B_TOOLS "1"
+ :_GUI_AA_S_CORE_NAME "PRESENTATION-MAIN"
+ :_PLW_AA_S_BOOKMARKED_ICON "Ic_presentation_40px"
+ :_PLW_AA_S_MENU_ICON "Ic_presentation_40px"
+ :_PLW_MENU_AA_B_DISPLAY "1"
+ :_PLW_MENU_AA_N_ORDER 5.0d0
+ :_PLW_MENU_AA_S_CALLBACK "planiswaremenumod.PlaniswaremenuPresentationAddCallback"
+ :_PLW_MENU_AA_S_CATEGORY "EXPORT"
+ (TEMP-TABLE::_GUI_PT_PANEL_TOOLS
+  :OBJECT-NUMBER 1711473199
+  :NAME "PRESENTATION-ADD"
+  :COMMENT "#@ihm._GUI_ATV_S_PRESENTATION_ADD_FN"
+  :DATASET 1238591899
+  :EXTERNAL-ID 0
+  :ORIGIN-NUMBER 0
+  :ORIGIN-PROJECT 0
+  :PARENT 118625061399
+  :_GUI_AA_B_TOOLS "1"
+  :_GUI_AA_S_CORE_NAME "PPT_INSERT"
+  :_PLW_AA_S_BOOKMARKED_ICON "Ic_insert_slides_white_22px"
+  :_PLW_AA_S_MENU_ICON "Ic_insert_slides_blue_22px"
+  :_PLW_MENU_AA_B_DISPLAY "0"
+  :_PLW_MENU_AA_N_ORDER 2.0d0
+  :_PLW_MENU_AA_S_CALLBACK "planiswaremenumod.PlaniswareMenuPresentationAddCallback"
+  :_PLW_MENU_AA_S_DISP_FORM "GetCurrentModule(\"\") <> \"PRES\" and GetCurrentModule(\"\") <>\"Administration\""
+ )
+ (TEMP-TABLE::_GUI_PT_PANEL_TOOLS
+  :OBJECT-NUMBER 1711473999
+  :NAME "PRESENTATION-PRINT"
+  :COMMENT "#@planiswaremenu.print_as_powerpoint"
+  :DATASET 1238591899
+  :EXTERNAL-ID 0
+  :ORIGIN-NUMBER 0
+  :ORIGIN-PROJECT 0
+  :PARENT 118625061399
+  :_GUI_AA_B_TOOLS "1"
+  :_GUI_AA_S_CORE_NAME "PPT_PRINT_PRES"
+  :_PLW_AA_S_BOOKMARKED_ICON "Ic_print_pdf_white_22px"
+  :_PLW_AA_S_MENU_ICON "Ic_print_powerpoint_blue_22px"
+  :_PLW_MENU_AA_B_DISPLAY "0"
+  :_PLW_MENU_AA_N_ORDER 1.0d0
+  :_PLW_MENU_AA_S_CALLBACK "planiswaremenumod.PlaniswareMenupptprintCalback"
+ )
+ (TEMP-TABLE::_GUI_PT_PANEL_TOOLS
+  :OBJECT-NUMBER 1711474099
+  :NAME "PRESENTATION-GOTO"
+  :COMMENT "#@ihm._GUI_ATV_S_PRESENTATION_GOTO_FN"
+  :DATASET 1238591899
+  :EXTERNAL-ID 0
+  :ORIGIN-NUMBER 0
+  :ORIGIN-PROJECT 0
+  :PARENT 118625061399
+  :_GUI_AA_B_TOOLS "1"
+  :_GUI_AA_S_CORE_NAME "PPT_OPEN"
+  :_PLW_AA_S_BOOKMARKED_ICON "Ic_open_presentation_powerpoint_white_22px"
+  :_PLW_AA_S_MENU_ICON "Ic_print_pdf_22px"
+  :_PLW_MENU_AA_B_DISPLAY "0"
+  :_PLW_MENU_AA_N_ORDER 3.0d0
+  :_PLW_MENU_AA_S_CALLBACK "planiswaremenumod.PlaniswareMenuPresentationGotoCallback"
+  :_PLW_MENU_AA_S_DISP_FORM "GetCurrentModule(\"\") <> \"PRES\" and GetCurrentModule(\"\") <>\"Administration\""
+ )
+ (TEMP-TABLE::_GUI_PT_PANEL_TOOLS
+  :OBJECT-NUMBER 1711475299
+  :NAME "PDF-PRESENTATION-PRINT-IN-PRES-MENU"
+  :COMMENT "#@planiswaremenu.print_as_pdf"
+  :DATASET 1238591899
+  :EXTERNAL-ID 0
+  :ORIGIN-NUMBER 0
+  :ORIGIN-PROJECT 0
+  :PARENT 118625061399
+  :_GUI_AA_B_TOOLS "1"
+  :_GUI_AA_S_CORE_NAME "PPT_PRINT_T"
+  :_PLW_AA_S_BOOKMARKED_ICON "Ic_print_pdf_white_22px"
+  :_PLW_AA_S_MENU_ICON "Ic_print_pdf_22px"
+  :_PLW_MENU_AA_B_DISPLAY "0"
+  :_PLW_MENU_AA_N_ORDER 0.0d0
+  :_PLW_MENU_AA_S_CALLBACK "planiswaremenumod.PlaniswareMenuPrintPdfPresentationCallback"
+ )
+ (TEMP-TABLE::_GUI_PT_PANEL_TOOLS
+  :OBJECT-NUMBER 123177477799
+  :NAME "EXPORT-TO-PAGES-PRESENTATION"
+  :COMMENT "#@collaboration.export_to_pages"
+  :DATASET 1238591899
+  :EXTERNAL-ID 0
+  :ORIGIN-NUMBER 0
+  :ORIGIN-PROJECT 0
+  :PARENT 118625061399
+  :_GUI_AA_B_TOOLS "1"
+  :_GUI_AA_S_CORE_NAME "PPT_EXPORT_PRES"
+  :_PLW_AA_S_BOOKMARKED_ICON "Ic_insert_slides_white_22px"
+  :_PLW_AA_S_MENU_ICON "Ic_insert_slides_blue_22px"
+  :_PLW_MENU_AA_B_DISPLAY "0"
+  :_PLW_MENU_AA_N_ORDER 0.0d0
+  :_PLW_MENU_AA_S_CALLBACK "planiswaremenumod.PlaniswareMenuExporttoPagesPresentationCallback()"
+  :_PLW_MENU_AA_S_DISP_FORM "_ColGoogleDriveAvailable()"
+ )
+)

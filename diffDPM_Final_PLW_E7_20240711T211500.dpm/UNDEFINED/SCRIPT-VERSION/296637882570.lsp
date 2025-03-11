@@ -1,0 +1,58 @@
+
+(JAVASCRIPT::SCRIPT-VERSION
+ :OBJECT-NUMBER 296637882570
+ :DATASET 118081000141
+ :SCRIPT-CODE "//
+//  PLWSCRIPT : SAN_RDPM_SCRIPT_EXPORT_SHINE
+//
+//  AUTHOR  : Harilanto RAKOTOVAO
+//	Object: export Pharma Planned expenditures, planned hours, Links, Activities and project to SHINE
+//
+//  Creation : 2021/01/21
+//  HRA 2021/03/17 : Add condition on export : vCheqF
+//  
+//  script to use in the batch SAN_RDPM_BA_EXPORT_TO_SHINE
+//
+//***************************************************************************/
+
+namespace _shine_impexTarget;
+
+
+function SanExport (string argTarget, string argFormat)
+{	
+   // plw.writeln(\"Starting export of \"+argTarget);
+    var plc.impextarget Target = plc.impextarget.get(argTarget);
+    
+    if(Target instanceOf plc.ImpexTarget){
+        
+        var plc.impexformat Format = plc.impexformat.get(argFormat);
+      /*  
+        if(Target._IMPEX_AA_B_TRUNCATE){
+            plw._Impex_TruncateTable(Target,Format);
+        }
+        */
+        Format.DoExportWithFormatAndTarget(Target);
+		plw.writeln(\"Exporting: \"+argFormat+\"_\"+argTarget);
+    }
+}
+
+var boolean vCheqF=_san_continuum.san_js_check_run_batch(\"weekly\",arg2:1,arg3:[1,2,3,4,5]);
+if (vCheqF==true) {
+    //SanExport 
+    // Planned expenditure
+    SanExport(\"SAN_RDPM_IMPEX_TARGET_SHINE_PLANNED_EXPENDITURE:CSV file format\", \"Planned expenditure:SAN_RDPM_IMPEX_FORMAT_SHINE_PLANNED_EXPENDITURE\");
+    // Planned hours
+    SanExport(\"SAN_RDPM_IMPEX_TARGET_SHINE_PLANNED_HOURS:CSV file format\", \"Planned hours:SAN_RDPM_IMPEX_FORMAT_SHINE_PLANNED_HOURS\");
+    // Activities
+    SanExport(\"SAN_RDPM_IMPEX_TARGET_SHINE_ACTIVITY:CSV file format\", \"Activity:SAN_RDPM_IMPEX_FORMAT_SHINE_ACTIVITY\");
+    // Links
+    SanExport(\"SAN_RDPM_IMPEX_TARGET_SHINE_LINK:CSV file format\", \"Link:SAN_RDPM_IMPEX_FORMAT_SHINE_LINK\");
+    //Projects
+    SanExport(\"SAN_RDPM_IMPEX_TARGET_SHINE_PROJECT:CSV file format\", \"Project:SAN_RDPM_IMPEX_FORMAT_SHINE_PROJECT\");
+}"
+ :SOURCE-DCR-SYNC-OBJECTS 0
+ :USER-SCRIPT 282808872670
+ :VERSION 3
+ :_US_AA_D_CREATION_DATE 20210318000000
+ :_US_AA_S_OWNER "E0431201"
+)

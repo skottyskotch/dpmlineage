@@ -1,0 +1,18 @@
+
+(MESSAGE-STRING::MESSAGE
+ :OBJECT-NUMBER 99924099
+ :NAME "on"
+ :DATASET 96270999
+ :ORIGIN :PROJECT
+ :PARENT 7205399
+ :VALUE #/E"on
+"F"le
+"G"am
+"I"il
+"D"on
+"J"日付"S"el  
+"K"on
+"C"于"P"on
+"R"on
+"/
+)

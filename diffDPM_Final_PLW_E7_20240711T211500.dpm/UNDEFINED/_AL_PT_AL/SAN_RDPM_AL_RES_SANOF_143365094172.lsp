@@ -1,0 +1,31 @@
+
+(TEMP-TABLE::_AL_PT_AL
+ :OBJECT-NUMBER 143365094172
+ :NAME "SAN_RDPM_AL_RES_SANOF"
+ :DATASET 118081000141
+ :EXTERNAL-ID 0
+ :ORIGIN-NUMBER 0
+ :ORIGIN-PROJECT 0
+ :PARENT 0
+ :_AL_AA_AL_B_IS_ACTIVE "1"
+ :_AL_AA_AL_B_ON_ALL_MODIF "0"
+ :_AL_AA_AL_B_ON_CREATION "1"
+ :_AL_AA_AL_B_ON_DELETE "0"
+ :_AL_AA_AL_B_ON_LOAD "0"
+ :_AL_AA_AL_B_ON_SAVE "0"
+ :_AL_AA_AL_N_PRIORITY 0.0d0
+ :_AL_AA_AL_S_CLASS "Resource"
+ :_AL_AA_AL_S_FILTER "name in (OC.SAN_RDPM_CS_RES_PHARMA, OC.SAN_RDPM_CS_RES_VACCINE)  and not (user_in_group( $CURRENT_USER ,\"R_ITS_ADMIN\")) "
+ :_AL_AA_AL_S_LABEL "Prevent creation of a new resource with Pasteur or pharma name"
+ :_AL_AA_AL_S_MSG_LABEL "\" You can not create a new resource with pasteur or pharma name, please change the resource name. \""
+ :_AL_AA_AL_S_MSG_TYPE "ERROR"
+ :_AL_AA_AL_S_ON_ATT_MODIF "NAME"
+ :_AL_AA_B_CREA_FI "0"
+ :_AL_AA_N_ALERT_ONB 0
+ :_AL_AA_S_NAME "RESOURCE"
+ :_AL_SEND_EMAIL "0"
+ :_NTF_AA_B_GEN_NOTIF "0"
+ :_NTF_RA_REPORTING 0
+ :_TALK_RA_SHOUTOUT_MODULE 0
+ :_TALK_RA_SHOUTOUT_REPORT 0
+)

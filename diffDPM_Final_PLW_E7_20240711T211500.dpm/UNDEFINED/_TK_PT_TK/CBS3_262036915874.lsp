@@ -1,0 +1,43 @@
+
+(TEMP-TABLE::_TK_PT_TK
+ :OBJECT-NUMBER 262036915874
+ :NAME "CBS3"
+ :DATASET 118081000141
+ :EXTERNAL-ID 0
+ :ORIGIN-NUMBER 0
+ :ORIGIN-PROJECT 0
+ :PARENT 0
+ :_TK_AA_B_ACTIVE "1"
+ :_TK_AA_S_CHINESE "Provider"
+ :_TK_AA_S_DUTCH "Provider"
+ :_TK_AA_S_ENGLISH "Provider"
+ :_TK_AA_S_FRENCH "Provider"
+ :_TK_AA_S_GERMAN "Provider"
+ :_TK_AA_S_ITALIAN "Provider"
+ :_TK_AA_S_JAPANESE "Provider"
+ :_TK_AA_S_KOREAN "Provider"
+ :_TK_AA_S_PORTUGUESE "Provider"
+ :_TK_AA_S_RUSSIAN "Provider"
+ :_TK_AA_S_SPANISH "Provider"
+ (TEMP-TABLE::_TK_PT_TK
+  :OBJECT-NUMBER 262036915774
+  :NAME "plural"
+  :DATASET 118081000141
+  :EXTERNAL-ID 0
+  :ORIGIN-NUMBER 0
+  :ORIGIN-PROJECT 0
+  :PARENT 262036915874
+  :_TK_AA_B_ACTIVE "1"
+  :_TK_AA_S_CHINESE "Provider"
+  :_TK_AA_S_DUTCH "Provider"
+  :_TK_AA_S_ENGLISH "Provider"
+  :_TK_AA_S_FRENCH "Provider"
+  :_TK_AA_S_GERMAN "Provider"
+  :_TK_AA_S_ITALIAN "Provider"
+  :_TK_AA_S_JAPANESE "Provider"
+  :_TK_AA_S_KOREAN "Provider"
+  :_TK_AA_S_PORTUGUESE "Provider"
+  :_TK_AA_S_RUSSIAN "Provider"
+  :_TK_AA_S_SPANISH "Provider"
+ )
+)

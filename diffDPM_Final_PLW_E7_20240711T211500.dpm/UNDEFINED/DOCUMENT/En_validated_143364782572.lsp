@@ -1,0 +1,46 @@
+
+(DOCUMENT-MANAGEMENT::DOCUMENT
+ :OBJECT-NUMBER 143364782572
+ :NAME "En_validated"
+ :%CMS-CONNECTOR "DB-CONNECTOR"
+ :CONNECTED-FIELD :_L1_DOC_IMAGE_BANK
+ :CONNECTED-TO 143364813372
+ :DATASET 118081000141
+ :FILE-SIZE 0
+ :HISTORY "Updated by E0431065 the 05/26/20 with the file : C:\\fakepath\\Validated.png
+Updated by E0431065 the 05/27/20 with the file : C:\\fakepath\\Validated.png
+Updated by E0431065 the 05/27/20 with the file : C:\\fakepath\\Validated.png
+Updated by E0431065 the 05/27/20 with the file : C:\\fakepath\\En_validated.png"
+ :LAST-UPDATE-DATE 0
+ :LAST-UPDATE-PATH "C:\\fakepath\\En_validated.png"
+ :LAST-UPDATE-USER "E0431065"
+ :MAJOR-VERSION 0
+ :MD5-SUM "3e929561306a032c3f1030cc342e0d98"
+ :MINOR-VERSION 0
+ :OBJECT-ID "En_validated.png"
+ :ORIGIN-NUMBER 0
+ :PDF-LENGTH 3813
+ :STORAGE-ON-FILE-SERVER "En_validated@143364782572@4.png"
+ :THUMBNAIL-LENGTH 4780
+ :THUMBNAIL-PAGES 1
+ :TYPE "png"
+ :VERSION 4
+ (DOCUMENT-MANAGEMENT::DOC-ELEMENT
+  :BLOB 143364782572
+  :DATA "+,^C)!!!!!!!<6Y#Kun!:ejLi$5s6O!!!I\"846>U!!(pW!!\")H\"onW'roq6N!!!!\"F&GLp!^OPL`;fl<$#iF<ErZ1V&c_nJ&clX;"
+  :DATASET 118081000141
+  :OFFSET 0
+ )
+ (DOCUMENT-MANAGEMENT::PDF-ELEMENT
+  :BLOB 143364782572
+  :DATA "+,^C)!!!!!!!B'\"#s=GfgW,GDnfg[eiGjr*be=_/f[gO0;U's$bV2MPA3&4#P,q6P;,L2R'-X&kCn\\/!b#Yf@feOP[6gF;*cM)eF"
+  :DATASET 118081000141
+  :OFFSET 0
+ )
+ (DOCUMENT-MANAGEMENT::THUMBNAIL-ELEMENT
+  :BLOB 143364782572
+  :DATA "+,^C)!!!!!!!<7e&o-f19*5;2!!!!)!'rKS:e74L'H[qf!1=K#!\"&]+!-DmsD.51OC2dgNQ=j/qbM(#2:59CD&:.(779\"Rd!=W7k"
+  :DATASET 118081000141
+  :OFFSET 0
+ )
+)

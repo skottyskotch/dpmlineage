@@ -1,0 +1,13 @@
+
+(NEW-ATTRIBUTE:NEW-ATTRIBUTE
+ :OBJECT-NUMBER 129551479299
+ :NAME :_GUI_AA_S_ADDITIONAL_INFO
+ :COMMENT "Additional info for the PLW menu card"
+ :ALLOCATION-MODE :OPTIONAL
+ :DATASET 1238591899
+ :DOCUMENTATION "OTD 134697 : Field used for additional info on planisware menu cards such as current dates or current units."
+ :LENGTH 0
+ :NCLASS TEMP-TABLE::_GUI_PT_PANEL_TOOLS
+ :STORAGE-MODE :IN-TABLE
+ :TYPE STRING
+)

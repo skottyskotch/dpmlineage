@@ -1,0 +1,9 @@
+
+(MESSAGE-STRING::MESSAGE
+ :OBJECT-NUMBER 368360699
+ :NAME "Sheet"
+ :DATASET 96270999
+ :ORIGIN :PROJECT
+ :PARENT 7205399
+ :VALUE #/E"Card"F"Feuille"G"Timecard"I"Foglio"D"Card"J"Card"S"Hoja"K"Card"C"Card"P"Card"R"TimeCard"/
+)

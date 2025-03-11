@@ -1,0 +1,21 @@
+
+(TEMP-TABLE::_IHM_TB_PT_TOOLS
+ :OBJECT-NUMBER 119861401999
+ :NAME "CS_MENUS"
+ :COMMENT "#@Report.PublishModule"
+ :DATASET 14047310199
+ :EXTERNAL-ID 0
+ :ORIGIN-NUMBER 0
+ :ORIGIN-PROJECT 0
+ :PARENT 0
+ :_IHM_AA_N_TOOL_VERSION 1.0d0
+ :_IHM_TB_AA_B_CHK_VAL_LIST "0"
+ :_IHM_TB_AA_B_LIST_INPUT "0"
+ :_IHM_TB_AA_B_LOM "0"
+ :_IHM_TB_AA_B_NEEDS_CHECK "0"
+ :_IHM_TB_AA_B_ONLY_VISIBLE "0"
+ :_IHM_TB_AA_B_SELECT_INPUT "0"
+ :_IHM_TB_AA_NP_SCRIPT "namespace rbmod;ÿbutton_publishSelectedTabreport(this);ÿ//only works with l1 reports"
+ :_IHM_TB_AA_S_FILTER "RBMOD_isReportBuilderDisplayedInBank()"
+ :_IHM_TB_AA_S_TYPE "MENUS"
+)

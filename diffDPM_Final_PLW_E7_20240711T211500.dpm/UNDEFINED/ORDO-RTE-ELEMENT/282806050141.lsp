@@ -1,0 +1,9 @@
+
+(IO-ORDO::ORDO-RTE-ELEMENT
+ :OBJECT-NUMBER 282806050141
+ :ATTRIBUTE :DOCUMENTATION
+ :DATA "<html><p><span style=\"background-color: #009688;\">Technical design to review:</span> Use WBS_TYPE.SAN_RDPM_UA_CSC_PACKAGING instead</p></html>"
+ :DATASET 118081000141
+ :OBJECT 260103601382
+ :OFFSET 0
+)

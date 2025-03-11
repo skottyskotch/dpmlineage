@@ -1,0 +1,13 @@
+
+(NEW-ATTRIBUTE:NEW-ATTRIBUTE
+ :OBJECT-NUMBER 1363888699
+ :NAME :_GUI_AA_B_VD_AVAIL
+ :COMMENT :|ihm.virtual_dataset_available|
+ :ALLOCATION-MODE :OPTIONAL
+ :DATASET 1238591899
+ :DOCUMENTATION "Field used to define if the tool to open projects in a virtualdataset is available or not"
+ :LENGTH 0
+ :NCLASS TEMP-TABLE::_GUI_PT_MODULES
+ :STORAGE-MODE :IN-TABLE
+ :TYPE OBJECT:YES-OR-NO
+)

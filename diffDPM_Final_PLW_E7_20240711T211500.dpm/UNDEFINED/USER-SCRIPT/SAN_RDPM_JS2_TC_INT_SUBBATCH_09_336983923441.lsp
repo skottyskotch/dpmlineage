@@ -1,0 +1,16 @@
+
+(JAVASCRIPT::USER-SCRIPT
+ :OBJECT-NUMBER 336983923441
+ :NAME "SAN_RDPM_JS2_TC_INT_SUBBATCH_09"
+ :COMMENT "TC int subbatch09"
+ :ACTIVE T
+ :DATASET 118081000141
+ :LOAD-ORDER 0
+ :SCRIPT-CODE "namespace _san_batch_int;
+_san_batch_int.san_pjs_launch_tc_integration_subbatch_for_instance(9);"
+ :SOURCE-DCR-SYNC-OBJECTS 0
+ :VERSION 2
+ :_US_AA_B_BATCH_SCRIPT "1"
+ :_US_AA_D_CREATION_DATE 20230719000000
+ :_US_AA_S_OWNER "intranet"
+)

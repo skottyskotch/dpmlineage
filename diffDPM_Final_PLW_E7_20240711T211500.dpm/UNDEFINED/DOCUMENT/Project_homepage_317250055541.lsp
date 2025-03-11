@@ -1,0 +1,36 @@
+
+(DOCUMENT-MANAGEMENT::DOCUMENT
+ :OBJECT-NUMBER 317250055541
+ :NAME "Project_homepage"
+ :%CMS-CONNECTOR "DB-CONNECTOR"
+ :CONNECTED-CLASS TEMP-TABLE::_SC_PT_REPORTING
+ :CONNECTED-FIELD :_RE_DF_REP_THUMBNAIL
+ :CONNECTED-TO 317250055341
+ :DATASET 118081000141
+ :FILE-SIZE 0
+ :HISTORY "
+Modifié par INTRANET le 20-SEP-13 avec le fichier: Projects_Module.jpg
+Modifié par INTRANET le 20-SEP-13 avec le fichier: Projects_Module.jpg
+Modifié par INTRANET le 23-SEP-13 avec le fichier: Projects_Module.jpg
+Modifié par INTRANET le 25-SEP-13 avec le fichier: Project_homepage.png"
+ :LAST-UPDATE-DATE 0
+ :LAST-UPDATE-PATH "Project_homepage.png"
+ :LAST-UPDATE-USER "INTRANET"
+ :MAJOR-VERSION 0
+ :MD5-SUM "471d9ac396600db0fa5ad5f23d83fb41"
+ :MINOR-VERSION 0
+ :OBJECT-ID "Project_homepage.png"
+ :ORIGIN-NUMBER 0
+ :PDF-LENGTH 0
+ :STORAGE-ON-FILE-SERVER "Project_homepage@-21@4.png"
+ :THUMBNAIL-LENGTH 0
+ :THUMBNAIL-PAGES 1
+ :TYPE "png"
+ :VERSION 4
+ (DOCUMENT-MANAGEMENT::DOC-ELEMENT
+  :BLOB 317250055541
+  :DATA "+,^C)!!!!!!!<8i,n\\jf:ejLi$5s6O!!!I\"846>U!!%6D!!#_!!WW3#iitG3!!!!%B0f6X!!'9b$iFE:!!!!*E(F,Q!!!M!!!!M!"
+  :DATASET 118081000141
+  :OFFSET 0
+ )
+)

@@ -1,0 +1,16 @@
+
+(JAVASCRIPT::SCRIPT-VERSION
+ :OBJECT-NUMBER 310375569710
+ :DATASET 118081000141
+ :SCRIPT-CODE "namespace _san_rdpm_js2_project_objective_notifications;
+for (var a in plc.__USER_TABLE_SAN_RDPM_UT_PROJECT_ROLE)
+if (a.get(\"name\")==\"Project Planning Manager\")
+a.SAN_RDPM_UA_B_ROLE_PO_NOTIF=true;
+
+plw.writeln(\"SAN_RDPM_JS2_PROJECT_OBJECTIVE_NOTIFICATIONS : succes\");"
+ :SOURCE-DCR-SYNC-OBJECTS 0
+ :USER-SCRIPT 0
+ :VERSION 1
+ :_US_AA_D_CREATION_DATE 20210825000000
+ :_US_AA_S_OWNER "E0296878"
+)

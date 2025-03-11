@@ -1,0 +1,45 @@
+
+(COMPOSITE-CURVE-TYPE:SYMBOLIC-FIELD
+ :OBJECT-NUMBER 117798374399
+ :NAME :_PE_SF_EQUA_IS_OK
+ :COMMENT :|PE.Equation.validation_equation|
+ :BACKGROUND1 :PPUP
+ :BACKGROUND2 :PPUP
+ :BACKGROUND3 :PPUP
+ :BACKGROUND4 :YELLOW
+ :BACKGROUND5 :YELLOW
+ :DATASET 44047899
+ :DOC1 ""
+ :DOC2 ""
+ :DOC3 ""
+ :DOC4 ""
+ :DOC5 ""
+ :DOCUMENTATION ""
+ :FONT #{GRAPHIC-TYPES:STANDARD-FONT@WEBDINGS.12}
+ :FOREGROUND1 :RED
+ :FOREGROUND2 :BLUE
+ :FOREGROUND3 :GREEN
+ :FOREGROUND4 :BLACK
+ :FOREGROUND5 :YELLOW
+ :FORMAT :IMAGE
+ :FORMULA1 "equationMod_eq_symbolic_field_filter() = 0"
+ :FORMULA2 "equationMod_eq_symbolic_field_filter() = 1"
+ :FORMULA3 "equationMod_eq_symbolic_field_filter() = 2"
+ :FORMULA4 ""
+ :FORMULA5 ""
+ :HIDDEN-IN-INTRANET-SERVER NIL
+ :IMAGES (:|1| "maybe_indicator_color_24px" :|3|
+          "wrong_indicator_color_24px" :|2| "true_indicator_color_24px")
+ :ON-CLASS TEMP-TABLE::_PE_PT_EQUA_EQUATION
+ :ORIGIN :PROJECT
+ :STRING1 "\"1\""
+ :STRING2 "\"2\""
+ :STRING3 "\"3\""
+ :STRING4 "\"4\""
+ :STRING5 "\"5\""
+ :SYMBOL1 :CIRCLE
+ :SYMBOL2 :CIRCLE
+ :SYMBOL3 :CIRCLE
+ :SYMBOL4 :CIRCLE
+ :SYMBOL5 :CIRCLE
+)

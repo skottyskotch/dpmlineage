@@ -1,0 +1,13 @@
+
+(NEW-ATTRIBUTE::USER-NEW-ATTRIBUTE
+ :OBJECT-NUMBER 282701961182
+ :NAME :SAN_RDPM_UA_S_ACTUAL_DISPATCH
+ :COMMENT "Actual Dispatch"
+ :DATASET 118081000141
+ :DEFAULT-VALUE -1
+ :FORMULA "ITER_DATE_MAX(\"ALL_CHILDREN\",\"?TASK and BELONGS(\\\"WBS_TYPE\\\",\\\"1st CTA availability from Corporate,CTA availability from Corporate,CTI availability from Corporate,DSUR availability from Corporate\\\")\",\"AF-'1d'\")"
+ :NCLASS KERNEL-ORDO:WORK-STRUCTURE
+ :PTYPES (:|Continuum.RDPM.Pharma|)
+ :SOURCE-DCR-SYNC-OBJECTS 0
+ :TYPE TIME-TYPES:DATE+
+)

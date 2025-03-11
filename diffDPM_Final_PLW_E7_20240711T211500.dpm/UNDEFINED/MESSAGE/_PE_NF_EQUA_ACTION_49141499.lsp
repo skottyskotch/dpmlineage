@@ -1,0 +1,9 @@
+
+(MESSAGE-STRING::MESSAGE
+ :OBJECT-NUMBER 49141499
+ :NAME "_PE_NF_EQUA_ACTION"
+ :DATASET 44047899
+ :ORIGIN :PROJECT
+ :PARENT 49101199
+ :VALUE #/E"Action"F"Action"G"Aktion"I"Azione"D"Aktie"J"アクション"S"Acción"K"Action"C"动作"P"Action"R"Задача"/
+)

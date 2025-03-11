@@ -1,0 +1,17 @@
+
+(NEW-ATTRIBUTE:NEW-ATTRIBUTE
+ :OBJECT-NUMBER 117617837899
+ :NAME :_GUI_AA_B_USE_ORIG_ELEARN
+ :COMMENT :|modules.use_origin_module_elearning|
+ :ALLOCATION-MODE :OPTIONAL
+ :CATEGORY "Additional attributes"
+ :DATASET 1238591899
+ :DEFAULT-VALUE T
+ :DOCUMENTATION "Use to define if the user needs to use the origin module for the E-learning"
+ :ENCRYPTION :STRING
+ :LENGTH 0
+ :MODULE "_MOD_GUI"
+ :NCLASS TEMP-TABLE::_GUI_PT_MODULES
+ :STORAGE-MODE :IN-TABLE
+ :TYPE OBJECT:YES-OR-NO
+)

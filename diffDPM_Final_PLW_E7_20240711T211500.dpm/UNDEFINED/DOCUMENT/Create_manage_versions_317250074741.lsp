@@ -1,0 +1,35 @@
+
+(DOCUMENT-MANAGEMENT::DOCUMENT
+ :OBJECT-NUMBER 317250074741
+ :NAME "Create_manage_versions"
+ :%CMS-CONNECTOR "DB-CONNECTOR"
+ :CONNECTED-CLASS TEMP-TABLE::_SC_PT_REPORTING
+ :CONNECTED-FIELD :_RE_DF_REP_THUMBNAIL
+ :CONNECTED-TO 317250074541
+ :DATASET 118081000141
+ :FILE-SIZE 0
+ :HISTORY "
+Modifié par INTRANET le 20-SEP-13 avec le fichier: Create_manage_versions.png
+Modifié par INTRANET le 23-SEP-13 avec le fichier: Create_manage_versions.png
+Modifié par INTRANET le 25-SEP-13 avec le fichier: Create_manage_versions.png"
+ :LAST-UPDATE-DATE 0
+ :LAST-UPDATE-PATH "Create_manage_versions.png"
+ :LAST-UPDATE-USER "INTRANET"
+ :MAJOR-VERSION 0
+ :MD5-SUM "059131c3e8028fa6921c01a6bb71c6d0"
+ :MINOR-VERSION 0
+ :OBJECT-ID "Create_manage_versions.png"
+ :ORIGIN-NUMBER 0
+ :PDF-LENGTH 0
+ :STORAGE-ON-FILE-SERVER "Create_manage_versions@-62@3.png"
+ :THUMBNAIL-LENGTH 0
+ :THUMBNAIL-PAGES 1
+ :TYPE "png"
+ :VERSION 3
+ (DOCUMENT-MANAGEMENT::DOC-ELEMENT
+  :BLOB 317250074741
+  :DATA "+,^C)!!!!!!!AdYkrTRfpW\"X-Z4&'_`tC^t&]r\\;'kT:YdTCD?_MkaZZ&a_eb=qUeKSCaT`YoKCLYRQ9Yn_.ehj5Mar1:[]\\XjVp"
+  :DATASET 118081000141
+  :OFFSET 0
+ )
+)

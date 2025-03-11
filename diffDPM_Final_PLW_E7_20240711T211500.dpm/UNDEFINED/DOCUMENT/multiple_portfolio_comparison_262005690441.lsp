@@ -1,0 +1,26 @@
+
+(DOCUMENT-MANAGEMENT::DOCUMENT
+ :OBJECT-NUMBER 262005690441
+ :NAME "multiple_portfolio_comparison"
+ :%CMS-CONNECTOR "DB-CONNECTOR"
+ :CONNECTED-FIELD :_RE_DF_REP_THUMBNAIL
+ :CONNECTED-TO 262005690241
+ :DATASET 118081000141
+ :FILE-SIZE 0
+ :HISTORY "
+Modifié par INTRANET le 05/28/15 avec le fichier: multiple_portfolio_comparison.jpg"
+ :LAST-UPDATE-DATE 0
+ :LAST-UPDATE-PATH "multiple_portfolio_comparison.jpg"
+ :LAST-UPDATE-USER "INTRANET"
+ :MAJOR-VERSION 0
+ :MD5-SUM "c2afbad19f23fedae55363aceae9cf23"
+ :MINOR-VERSION 0
+ :OBJECT-ID "multiple_portfolio_comparison.jpg"
+ :ORIGIN-NUMBER 0
+ :PDF-LENGTH 0
+ :STORAGE-ON-FILE-SERVER "multiple_portfolio_comparison@-19@1.jpg"
+ :THUMBNAIL-LENGTH 0
+ :THUMBNAIL-PAGES 0
+ :TYPE "jpg"
+ :VERSION 1
+)

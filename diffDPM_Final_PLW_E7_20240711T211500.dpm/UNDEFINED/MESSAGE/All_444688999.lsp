@@ -1,0 +1,9 @@
+
+(MESSAGE-STRING::MESSAGE
+ :OBJECT-NUMBER 444688999
+ :NAME "All"
+ :DATASET 96270999
+ :ORIGIN :PROJECT
+ :PARENT 7205399
+ :VALUE #/E"All"F"Toutes"G"Alle"I"Tutti"D"All"J"全て"S"Todas"K"All"C"全部"P"All"R"Все"/
+)

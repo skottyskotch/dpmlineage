@@ -1,0 +1,9 @@
+
+(MESSAGE-STRING::MESSAGE
+ :OBJECT-NUMBER 99923599
+ :NAME "Role"
+ :DATASET 96270999
+ :ORIGIN :PROJECT
+ :PARENT 7205399
+ :VALUE #/E"Role"F"Rôle"G"Rolle"I"Ruolo"D"Role"J"Role"S"Rol"K"Role"C"Role"P"Role"R"Роль"/
+)

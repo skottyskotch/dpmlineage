@@ -1,0 +1,13 @@
+
+(NEW-ATTRIBUTE::USER-NEW-ATTRIBUTE
+ :OBJECT-NUMBER 342037155141
+ :NAME :SAN_RDPM_UA_RES_S_MANAG_FORM
+ :COMMENT "Timecard Managers formula"
+ :ADMIN-ONLY T
+ :DATASET 118081000141
+ :FORMULA "if (STRING_VALUE(\"USER\",SAN_RDPM_UA_S_RES_MANAG_ID,\"ID\")<>\"\") then (list_merge(list_merge(manager,list_remove(manager,child_of.SAN_RDPM_UA_RES_BACKUP)), SAN_RDPM_UA_S_RES_MANAG_ID)) else (list_merge(manager,list_remove(manager,child_of.SAN_RDPM_UA_RES_BACKUP))) fi"
+ :NCLASS KERNEL-ORDO:RESOURCE
+ :SOURCE-DCR-SYNC-OBJECTS 0
+ :TYPE STRING
+ :_USERATT_AA_B_HIDE_IN_CFG "0"
+)

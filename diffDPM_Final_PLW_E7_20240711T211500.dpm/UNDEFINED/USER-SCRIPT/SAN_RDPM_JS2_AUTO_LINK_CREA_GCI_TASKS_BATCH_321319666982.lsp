@@ -1,0 +1,16 @@
+
+(JAVASCRIPT::USER-SCRIPT
+ :OBJECT-NUMBER 321319666982
+ :NAME "SAN_RDPM_JS2_AUTO_LINK_CREA_GCI_TASKS_BATCH"
+ :COMMENT "Script for batch"
+ :ACTIVE T
+ :DATASET 118081000141
+ :LOAD-ORDER 0
+ :SCRIPT-CODE "namespace _rdpm_recreate_links_gci_batch;
+_rdpm_recreate_links_gci._rdpm_auto_link_gci_assay_gci_lab_tasks_batch();"
+ :SOURCE-DCR-SYNC-OBJECTS 0
+ :VERSION 2
+ :_US_AA_B_BATCH_SCRIPT "1"
+ :_US_AA_D_CREATION_DATE 20240206000000
+ :_US_AA_S_OWNER "E0434229"
+)

@@ -1,0 +1,9 @@
+
+(MESSAGE-STRING::MESSAGE
+ :OBJECT-NUMBER 99916699
+ :NAME "State"
+ :DATASET 96270999
+ :ORIGIN :PROJECT
+ :PARENT 7205399
+ :VALUE #/E"State"F"État"G"Status"I"Stato"D"State"J"状況"S"Estado"K"State"C"状态"P"State"R"Статус"/
+)

@@ -1,0 +1,13 @@
+
+(NEW-ATTRIBUTE::USER-NEW-ATTRIBUTE
+ :OBJECT-NUMBER 321315655882
+ :NAME :SAN_RDPM_UA_S_WBSF_COLO_PL_LEADER
+ :COMMENT "PL Role - Leader"
+ :DATASET 118081000141
+ :FORMULA "IF SAN_UA_RDPM_B_IS_A_STUDY THEN if san_pjs_get_wbs_form_string_value_on_object(ID,\"CPM-PL\",\"USER_ATTRIBUTE_SAN_UA_S_LEADER\") <> \"\" then san_pjs_get_wbs_form_string_value_on_object(ID,\"CPM-PL\",\"USER_ATTRIBUTE_SAN_UA_S_LEADER\") else san_pjs_get_wbs_form_string_value_on_object(ID,\"COLO-PL\",\"USER_ATTRIBUTE_SAN_UA_S_LEADER\") FI FI"
+ :NCLASS KERNEL-ORDO:WORK-STRUCTURE
+ :PTYPES (:|Continuum.RDPM.Pharma|)
+ :SOURCE-DCR-SYNC-OBJECTS 0
+ :TYPE STRING
+ :_USERATT_AA_B_HIDE_IN_CFG "0"
+)

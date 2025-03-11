@@ -1,0 +1,27 @@
+
+(DOCUMENT-MANAGEMENT::DOCUMENT
+ :OBJECT-NUMBER 283039068441
+ :NAME "inter-projects_links"
+ :%CMS-CONNECTOR "DB-CONNECTOR"
+ :CONNECTED-FIELD :_RE_DF_REP_THUMBNAIL
+ :CONNECTED-TO 283039068241
+ :DATASET 118081000141
+ :FILE-SIZE 0
+ :HISTORY "
+Modifié par INTRANET le 05/27/15 avec le fichier: inter-projects_links.jpg
+Modifié par INTRANET le 09/02/2015 avec le fichier: inter-projects_links.jpg"
+ :LAST-UPDATE-DATE 0
+ :LAST-UPDATE-PATH "inter-projects_links.jpg"
+ :LAST-UPDATE-USER "INTRANET"
+ :MAJOR-VERSION 0
+ :MD5-SUM "67a7c068096c5d55ebb2af8e7f311b3b"
+ :MINOR-VERSION 0
+ :OBJECT-ID "inter-projects_links.jpg.1"
+ :ORIGIN-NUMBER 0
+ :PDF-LENGTH 0
+ :STORAGE-ON-FILE-SERVER "inter-projects_links@-19@2.jpg"
+ :THUMBNAIL-LENGTH 0
+ :THUMBNAIL-PAGES 0
+ :TYPE "jpg"
+ :VERSION 2
+)

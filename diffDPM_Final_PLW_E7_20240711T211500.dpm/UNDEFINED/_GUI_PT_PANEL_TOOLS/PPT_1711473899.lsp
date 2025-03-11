@@ -1,0 +1,88 @@
+
+(TEMP-TABLE::_GUI_PT_PANEL_TOOLS
+ :OBJECT-NUMBER 1711473899
+ :NAME "PPT"
+ :COMMENT "PowerPoint"
+ :DATASET 1238591899
+ :EXTERNAL-ID 0
+ :ORIGIN-NUMBER 0
+ :ORIGIN-PROJECT 0
+ :PARENT 0
+ :_GUI_AA_B_TOOLS "1"
+ :_GUI_AA_S_CORE_NAME "PPT_FN"
+ :_PLW_AA_S_BOOKMARKED_ICON "ic_powerpoint_40px"
+ :_PLW_AA_S_MENU_ICON "ic_powerpoint_40px"
+ :_PLW_MENU_AA_B_DISPLAY "1"
+ :_PLW_MENU_AA_N_ORDER 2.0d0
+ :_PLW_MENU_AA_S_CALLBACK "planiswaremenumod.PlaniswaremenuPptCallback"
+ :_PLW_MENU_AA_S_CATEGORY "EXPORT"
+ (TEMP-TABLE::_GUI_PT_PANEL_TOOLS
+  :OBJECT-NUMBER 1711475699
+  :NAME "PPT-MAIN"
+  :COMMENT "#@ihm._GUI_ATV_S_PPT_MAIN_FN"
+  :DATASET 1238591899
+  :EXTERNAL-ID 0
+  :ORIGIN-NUMBER 0
+  :ORIGIN-PROJECT 0
+  :PARENT 1711473899
+  :_GUI_AA_B_TOOLS "1"
+  :_GUI_AA_S_CORE_NAME "PPT_MAIN_FN"
+  :_PLW_AA_S_BOOKMARKED_ICON "Ic_print_powerpoint_white_22px"
+  :_PLW_AA_S_MENU_ICON "Ic_print_powerpoint_blue_22px"
+  :_PLW_MENU_AA_B_DISPLAY "1"
+  :_PLW_MENU_AA_N_ORDER 0.0d0
+  :_PLW_MENU_AA_S_CALLBACK "planiswaremenumod.PlaniswaremenuPptCallback"
+ )
+ (TEMP-TABLE::_GUI_PT_PANEL_TOOLS
+  :OBJECT-NUMBER 119834382499
+  :NAME "EXPORT-TO-PAGES"
+  :COMMENT "#@collaboration.export_to_pages"
+  :DATASET 1238591899
+  :EXTERNAL-ID 0
+  :ORIGIN-NUMBER 0
+  :ORIGIN-PROJECT 0
+  :PARENT 1711473899
+  :_GUI_AA_B_TOOLS "1"
+  :_GUI_AA_S_CORE_NAME "PPT_EXPORT"
+  :_PLW_AA_S_BOOKMARKED_ICON "Ic_export_slide_white_22px"
+  :_PLW_AA_S_MENU_ICON "Ic_export_slide_blue_22px"
+  :_PLW_MENU_AA_B_DISPLAY "1"
+  :_PLW_MENU_AA_N_ORDER 0.0d0
+  :_PLW_MENU_AA_S_CALLBACK "planiswaremenumod.PlaniswareMenuExporttoPagesCallback"
+  :_PLW_MENU_AA_S_DISP_FORM "_ColGoogleDriveAvailable()"
+ )
+ (TEMP-TABLE::_GUI_PT_PANEL_TOOLS
+  :OBJECT-NUMBER 119834925999
+  :NAME "STORE-PPT"
+  :COMMENT "#@collaboration.store_ppt"
+  :DATASET 1238591899
+  :EXTERNAL-ID 0
+  :ORIGIN-NUMBER 0
+  :ORIGIN-PROJECT 0
+  :PARENT 1711473899
+  :_GUI_AA_B_TOOLS "1"
+  :_GUI_AA_S_CORE_NAME "PPT_STORE"
+  :_PLW_AA_S_BOOKMARKED_ICON "Ic_print_pdf_white_22px"
+  :_PLW_AA_S_MENU_ICON "Ic_print_pdf_22px"
+  :_PLW_MENU_AA_B_DISPLAY "1"
+  :_PLW_MENU_AA_N_ORDER 1.0d0
+  :_PLW_MENU_AA_S_CALLBACK "planiswaremenumod.PlaniswareMenuStorepptCallback"
+ )
+ (TEMP-TABLE::_GUI_PT_PANEL_TOOLS
+  :OBJECT-NUMBER 119834926099
+  :NAME "PRESENTATION-PRINT"
+  :COMMENT "#@planiswaremenu.print_presentation"
+  :DATASET 1238591899
+  :EXTERNAL-ID 0
+  :ORIGIN-NUMBER 0
+  :ORIGIN-PROJECT 0
+  :PARENT 1711473899
+  :_GUI_AA_B_TOOLS "1"
+  :_GUI_AA_S_CORE_NAME "PPT_PRINT"
+  :_PLW_AA_S_BOOKMARKED_ICON "Ic_print_presentation_white_22px"
+  :_PLW_AA_S_MENU_ICON "Ic_print_presentation_blue_22px"
+  :_PLW_MENU_AA_B_DISPLAY "1"
+  :_PLW_MENU_AA_N_ORDER 2.0d0
+  :_PLW_MENU_AA_S_CALLBACK "planiswaremenumod.PlaniswareMenupptprintCalback"
+ )
+)

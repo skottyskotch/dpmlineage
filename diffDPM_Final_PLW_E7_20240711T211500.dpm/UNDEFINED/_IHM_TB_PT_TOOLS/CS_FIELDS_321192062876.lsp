@@ -1,0 +1,24 @@
+
+(TEMP-TABLE::_IHM_TB_PT_TOOLS
+ :OBJECT-NUMBER 321192062876
+ :NAME "CS_FIELDS"
+ :COMMENT "FTE category"
+ :DATASET 118081000141
+ :EXTERNAL-ID 0
+ :ORIGIN-NUMBER 0
+ :ORIGIN-PROJECT 0
+ :PARENT 0
+ :_IHM_AA_N_TOOL_VERSION 1.0d0
+ :_IHM_AA_S_COMPLETE_SCRIPT "namespace _san_bpc;var vVect=new vector(\"Budget\",\"Planned\",\"Actual\",\"Capacity\");this.possiblevalues=vVect; "
+ :_IHM_TB_AA_B_CHK_VAL_LIST "0"
+ :_IHM_TB_AA_B_LIST_INPUT "1"
+ :_IHM_TB_AA_B_LOM "0"
+ :_IHM_TB_AA_B_NEEDS_CHECK "0"
+ :_IHM_TB_AA_B_ONLY_VISIBLE "1"
+ :_IHM_TB_AA_B_SELECT_INPUT "1"
+ :_IHM_TB_AA_NP_SCRIPT "namespace _san_tb; ÿthis.editor.apply();ÿif (context.SAN_RDPM_UA_OC_S_FTE_CATEGORY_FILTER ==\"Planned\") {ÿþcontext.SAN_UA_RDPM_FILTER_OPERATIONALITY =\"\";ÿ}"
+ :_IHM_TB_AA_S_ATTR_NAME "SAN_RDPM_UA_S_OC_BPAC_FTE_CATEGORY"
+ :_IHM_TB_AA_S_CLASS_NAME "CONTEXT-OPX2"
+ :_IHM_TB_AA_S_GROUPING "filter.plural"
+ :_IHM_TB_AA_S_TYPE "FIELDS"
+)
