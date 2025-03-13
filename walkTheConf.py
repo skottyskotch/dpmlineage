@@ -17,6 +17,7 @@ class objectType:
         self.named = False
         self.regex = b''
         self.objects = []
+        self.maxCallers = 0
         objectType.instances[self.name] = self
 
 class objectLsp:
@@ -37,10 +38,13 @@ def findNames(lspdir, info):
         refinedRegex1 = re.compile(refinedNameRegex1, re.MULTILINE)
         refinedRegex2 = re.compile(refinedNameRegex2, re.MULTILINE)
         regexB = re.compile(onbRegex, re.MULTILINE)
+        i = 0
         for root, dirs, files in os.walk(lspdir, topdown=False):
             for name in dirs:
                 myObjectType = objectType(name)
                 for file in os.listdir(os.path.join(root,name)):
+                    i += 1
+                    print(str(i) + '/?', end = '\r')
                     with open(os.path.join(root, name, file), 'rb') as lsp:
                         lspText = lsp.read()
                         objectOnb = re.findall(regexB,lspText)[0]
@@ -72,6 +76,8 @@ def findNames(lspdir, info):
 def chooseObjectToSearch():
     bContinue = True
     sChosenClass = ''
+    os.system('cls')
+    print('Search callers for one object')
     while bContinue:
         questions = [inquirer.Checkbox(
             'class',
@@ -91,7 +97,7 @@ def chooseObjectToSearch():
     while bContinue:
         questions = [inquirer.Checkbox(
             'object',
-            message="Select one object",
+            message="Select one object from class " + sChosenClass,
             choices=[myObj.name.decode('utf-8') + ' (' + str(myObj.onb) + ')'for myObj in objectType.instances[sChosenClass].objects],
             carousel=True
         )]
@@ -112,7 +118,7 @@ def searchDependancies(obj, verbose):
                 if verbose:
                     print('onb found in ' + otherObj.path)
                 callers.append(otherObj)
-            if obj.objectType.named == True and len(re.findall(obj.name, otherObj.text)) > 0:
+            if obj.objectType.named == True and len(re.findall(re.escape(obj.name), otherObj.text)) > 0:
                 if verbose:
                     print('name found in ' + otherObj.path)
                 callers.append(otherObj)
@@ -122,28 +128,38 @@ def dumpCallers():
     onbs = list(objectLsp.instances.keys())
     data = {'ONB': onbs,
     'NAME': [objectLsp.instances[x].name.decode('utf-8') for x in onbs],
-    'CALLERS': [','.join([str(y.onb) for y in objectLsp.instances[x].callers]) for x in onbs]}
+    'CLASS': [objectLsp.instances[x].objectType.name for x in onbs],
+    # 'CALLERS': [','.join([str(y.onb) for y in objectLsp.instances[x].callers]) for x in onbs],
+    '#CALLERS': [str(len(objectLsp.instances[x].callers)) for x in onbs]}
     df = pd.DataFrame(data)
     df.to_csv('callers.csv', sep = ';')
+    print('\ncallers.csv exported')
 
 def __main__():
-    print('Find the names of the objects')
+    print('Parsing the objects')
     lspdir = args.lspdir
     if findNames(lspdir,args.info):
         if args.choose:
-            print('Search callers for one object')
-            myObj = chooseObjectToSearch()
-            print(myObj.objectType.name + ' object "' + myObj.name.decode('utf-8') + '" ('+ str(myObj.onb) +') searched in the conf')
-            searchDependancies(myObj, True)
-            print('\n'+str(len(myObj.callers)) + ' callers:')
-            print('\n'.join([x.objectType.name + '\t' + str(x.onb) for x in myObj.callers]))
+            bContinue = True
+            while bContinue:
+                myObj = chooseObjectToSearch()
+                print(myObj.objectType.name + ' object "' + myObj.name.decode('utf-8') + '" ('+ str(myObj.onb) +') searched in the conf')
+                searchDependancies(myObj, True)
+                print('\n'+str(len(myObj.callers)) + ' caller(s):')
+                print('\n'.join([x.objectType.name + '\t' + str(x.onb) for x in myObj.callers]))
+                answer = input('\nType Enter to search another object?')
+                if answer == '':
+                    bContinue = True
+                else:
+                    bContinue = False
         else:
             i = 0
             # for obj in list(objectLsp.instances.values())[-5:]:
             for obj in list(objectLsp.instances.values()):
                 i += 1
-                print('searching dependencies ' + str(i) + '/' + str(len(list(objectLsp.instances.values()))), end = '\r')
+                print('searching dependencies ' + str(i) + '/' + str(len(list(objectLsp.instances.values()))) + ' ' + obj.objectType.name + '                                                  ', end = '\r')
                 searchDependancies(obj, False)
+                # print(obj.objectType.name + ' object "' + obj.name.decode('utf-8') + '" ('+ str(obj.onb) +') : ['+ str(len(obj.callers))+' callers]')
             dumpCallers()
 
 nameRegex =         r'^\s*:NAME\s+(.*)$'.encode('utf-8')

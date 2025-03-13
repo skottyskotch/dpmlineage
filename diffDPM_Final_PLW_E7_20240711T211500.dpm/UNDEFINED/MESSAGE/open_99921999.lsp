@@ -1,9 +1,0 @@
-
-(MESSAGE-STRING::MESSAGE
- :OBJECT-NUMBER 99921999
- :NAME "open"
- :DATASET 96270999
- :ORIGIN :PROJECT
- :PARENT 7205399
- :VALUE #/E"Open"F"Ouvert"G"Offen"I"Aperto"D"Open"J"Open"S"Abierto"K"Open"C"Open"P"Open"R"Открыто"/
-)

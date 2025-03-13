@@ -1,9 +1,0 @@
-
-(IO-ORDO::ORDO-RTE-ELEMENT
- :OBJECT-NUMBER 123796429199
- :ATTRIBUTE :DOCUMENTATION
- :DATA "<html><p>Publication name (default is report name + \"_PUB\")</p></html>"
- :DATASET 14047310199
- :OBJECT 123796429699
- :OFFSET 0
-)

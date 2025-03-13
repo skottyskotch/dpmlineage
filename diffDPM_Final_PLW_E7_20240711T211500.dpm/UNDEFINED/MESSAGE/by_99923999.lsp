@@ -1,9 +1,0 @@
-
-(MESSAGE-STRING::MESSAGE
- :OBJECT-NUMBER 99923999
- :NAME "by"
- :DATASET 96270999
- :ORIGIN :PROJECT
- :PARENT 7205399
- :VALUE #/E"by"F"par"G"von"I"da"D"by"J"by"S"por"K"by"C"by"P"by"R"от"/
-)

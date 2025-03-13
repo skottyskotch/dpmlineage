@@ -1,9 +1,0 @@
-
-(MESSAGE-STRING::MESSAGE
- :OBJECT-NUMBER 118125113699
- :NAME "send"
- :DATASET 96270999
- :ORIGIN :PROJECT
- :PARENT 7205399
- :VALUE #/E"Send"F"Envoyer"G"Senden"I"Send"D"Send"J"Send"S"Enviar"K"Send"C"Send"P"Send"R"Отправить"/
-)

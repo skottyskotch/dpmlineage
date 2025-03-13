@@ -1,9 +1,0 @@
-
-(MESSAGE-STRING::MESSAGE
- :OBJECT-NUMBER 99922599
- :NAME "Empty"
- :DATASET 96270999
- :ORIGIN :PROJECT
- :PARENT 7205399
- :VALUE #/E"Empty"F"Vide"G"Leer"I"Vuoto"D"Empty"J"Empty"S"Vacío"K"Empty"C"Empty"P"Empty"R"Пусто"/
-)

@@ -1,9 +1,0 @@
-
-(MESSAGE-STRING::MESSAGE
- :OBJECT-NUMBER 99924699
- :NAME "Type"
- :DATASET 96270999
- :ORIGIN :PROJECT
- :PARENT 7205399
- :VALUE #/E"Type"F"Type"G"Typ"I"Tipo"D"Type"J"タイプ"S"Tipo"K"Type"C"类型"P"Type"R"Тип"/
-)

@@ -1,9 +1,0 @@
-
-(MESSAGE-STRING::MESSAGE
- :OBJECT-NUMBER 118611480999
- :NAME "add"
- :DATASET 1238591899
- :ORIGIN :PROJECT
- :PARENT 1738255399
- :VALUE #/E"Add"F"Ajouter"G"Hinzufügen"I"Add"D"Add"J"Add"S"Añadir"K"Add"C"Add"P"Add"R"Добавить"/
-)
