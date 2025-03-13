@@ -2,7 +2,7 @@ import argparse
 import os
 import re
 import inquirer # non-standard module required 'pip install inquirer'
-import pandas as pd
+import pandas as pd # non-standard module required 'pip install pandas'
 
 parser = argparse.ArgumentParser()
 parser.add_argument("lspdir", help="lsp directory name (path/to/diffDPM/UNDEFINED)")
@@ -31,7 +31,7 @@ class objectLsp:
         objectLsp.instances[self.onb] = self
         oObjectType.objects.append(self)
 
-def findNames(lspdir):
+def findNames(lspdir, info):
     if os.path.isdir(lspdir):
         regexA = re.compile(nameRegex, re.MULTILINE)
         refinedRegex1 = re.compile(refinedNameRegex1, re.MULTILINE)
@@ -59,8 +59,7 @@ def findNames(lspdir):
         print(lspdir)
         print('not a dir')
         return False
-
-    if args.info:
+    if info:
         print(':NAME not found:')
         print('\n'.join(['\t' + str(len(value.objects)) + '\t' + key                            for key, value in objectType.instances.items() if value.named == False]))
         print(':NAME parsed:')
@@ -83,7 +82,7 @@ def chooseObjectToSearch():
         answers = inquirer.prompt(questions)  # returns a dict
         if len(answers['class']) == 1:
             bContinue = False
-            sChosenClass = re.sub('\s\(\d*\)','',answers['class'][0])
+            sChosenClass = re.sub(r'\s\(\d*\)','',answers['class'][0])
             os.system('cls')
         else:
             print('Please select only one class')
@@ -99,7 +98,7 @@ def chooseObjectToSearch():
         answers = inquirer.prompt(questions)  # returns a dict
         if len(answers['object']) == 1:
             bContinue = False
-            sChosenOnb = re.findall('\((\d+)\)',answers['object'][0])[0]
+            sChosenOnb = re.findall(r'\((\d+)\)',answers['object'][0])[0]
             os.system('cls')
             return objectLsp.instances[int(sChosenOnb)]
         else:
@@ -120,17 +119,17 @@ def searchDependancies(obj, verbose):
     obj.callers = callers
 
 def dumpCallers():
-    onbs = list(objectLsp.keys())
+    onbs = list(objectLsp.instances.keys())
     data = {'ONB': onbs,
-            'NAME': [objectLsp[x].name for x in onbs],
-            'CALLERS': [','.join(objectLsp[x].callers) for x in onbs]}
+    'NAME': [objectLsp.instances[x].name.decode('utf-8') for x in onbs],
+    'CALLERS': [','.join([str(y.onb) for y in objectLsp.instances[x].callers]) for x in onbs]}
     df = pd.DataFrame(data)
-    df.to_csv('callers.csv')
+    df.to_csv('callers.csv', sep = ';')
 
 def __main__():
     print('Find the names of the objects')
     lspdir = args.lspdir
-    if findNames(lspdir):
+    if findNames(lspdir,args.info):
         if args.choose:
             print('Search callers for one object')
             myObj = chooseObjectToSearch()
@@ -140,14 +139,15 @@ def __main__():
             print('\n'.join([x.objectType.name + '\t' + str(x.onb) for x in myObj.callers]))
         else:
             i = 0
+            # for obj in list(objectLsp.instances.values())[-5:]:
             for obj in list(objectLsp.instances.values()):
                 i += 1
                 print('searching dependencies ' + str(i) + '/' + str(len(list(objectLsp.instances.values()))), end = '\r')
                 searchDependancies(obj, False)
             dumpCallers()
 
-nameRegex =         b'^\s*:NAME\s+(.*)$'
-refinedNameRegex1 = b'^\s*:NAME\s+"([^"]*)"$'
-refinedNameRegex2 = b'^\s*:NAME\s+:([^\s]*)$'
-onbRegex = b'^\s*:OBJECT-NUMBER\s+(\d+)'
+nameRegex =         r'^\s*:NAME\s+(.*)$'.encode('utf-8')
+refinedNameRegex1 = r'^\s*:NAME\s+"([^"]*)"$'.encode('utf-8')
+refinedNameRegex2 = r'^\s*:NAME\s+:([^\s]*)$'.encode('utf-8')
+onbRegex = r'^\s*:OBJECT-NUMBER\s+(\d+)'.encode('utf-8')
 __main__()
