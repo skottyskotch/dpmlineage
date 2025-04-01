@@ -6,100 +6,73 @@ import os
 import regex
 import hashlib
 import argparse
+import inquirer # pip install inquirer
 from rich.progress import Progress # pip install rich
+import signal
 
 #######################################
 #	Function for dynamic classes
-def create_object(cls, type, columns, values, clas):
-	print('classe creee')
-	return type.__new__()
-	
 def init_object(self, type, columns, line, cls):
+	# object identifier: value of the attribute marked as INDEX of the table-def, or the concatenation of the OTHER-INDEXES values
 	values = line.split(b'\t')
 	values.pop(0)
-	# object identifier
 	obj_identifier = ''
 	if cls.keyID != b'NIL':
-		attribute_names=iter(columns)
-		attribute_values=iter(values)
-		for i in columns:
-			if next(attribute_names)[0][1] == cls.keyID:
-				obj_identifier = next(attribute_values)
-				break
-			else:
-				next(attribute_values)
+		obj_identifier = values[[x.ATT for x in columns].index(cls.keyID)]
 	else:
 		obj_identifiers = []
 		for eachKey in cls.other_indexes:
-			attribute_names=iter(columns)
-			attribute_values=iter(values)
-			for i in columns:
-				if next(attribute_names)[0][1] == eachKey:
-					obj_identifiers.append(next(attribute_values))
-					break
-				else:
-					next(attribute_values)
+			obj_identifiers.append(values[[x.ATT for x in columns].index(eachKey)])
 		obj_identifier = b"_".join(obj_identifiers)
 	filename = obj_identifier.decode('utf-8')
 	# for the classes with a :BLOB keyID, this identifier is not unique for the objects. filenames are ':BLOB_' + md5hash
 	if cls.keyID.decode('utf-8') == ':BLOB':
 		md5hash = hashlib.md5(line).hexdigest()
 		filename = filename + '_' + md5hash
+	for val in values:
+		columns[values.index(val)].VALUE = val
 	self.type = type
 	type_directory = regex.sub(rb'[:\?\*<>\|]',b'_',type)
 	self.type_directory = type_directory
 	self.columns = columns
 	self.values = values
-	self.plwFile = ''
+	self.PlwFile = ''
 	self.directory = ''
 	cls.instances.append(self)
-	# self.id = obj_identifier.decode('utf-8')
 	self.id = obj_identifier
 	self.filename = filename
 	if cls.name in ['#%DATABASE-IO:USER-PARAMETER:']:
 	# pdf, doc and thumbnail filenames are  managed by checksum, not increment anymore
 		self.id = obj_identifier.decode('utf-8')+'-'+str(len(cls.instances))
 
-def print_object(object):
-	# pass
+def show_object(object):
+	nMaxAttributeNameLength = max([len(x.ATT) for x in object.columns])
 	print('****** type: '			+ object.type.decode('utf-8'))
-	# print('id: '					+ object.id.decode('utf-8'))
+	print('id: '					+ object.id.decode('utf-8'))
 	print('filename: '				+ object.filename)
-	# print('columns: '				+ str(object.columns))
-	# print('values: '				+ str(object.values))
+	print('attributes/values: ')
+	print(b'\n'.join([col.ATT.ljust(nMaxAttributeNameLength+1) + col.VALUE for col in object.columns]).decode('utf-8'))
 
 def write_object(object, object_path=1):
 	if object_path != '':
 		output_file = open(object_path, 'wb')
 	if len(object.columns) == len(object.values):
-		columns=iter(object.columns)
-		values=iter(object.values)
-		# print(object.type)
 		output_file.write(object.type + b'\n')
-		for i in object.values:
-			bin_col = next(columns)[0][1]
-			bin_val = next(values)
-			line = bin_col + b'\t' + bin_val + b'\n'
-			output_file.write(line)
+		output_file.write(b'\n'.join([col.ATT + b'\t' + col.VALUE for col in object.columns]))
 	else:
 		print("columns/values inconsistent".encode('utf-8'))
 	if object_path != '':
 		output_file.close()
 				
 def check_object_attribute(object, attribute):
-	attribute_found = -1
-	i = -1
-	for each_col in object.columns:
-		i = i + 1
-		if each_col[0][1] == attribute:
-			attribute_found = 1
-			break
-	if attribute_found == 1:
-		return i
+	# search if object posses the attribute, returns the rank or -1 if not found
+	if attribute in [col.ATT for col in object.columns]:
+		return [col.ATT for col in object.columns].index(attribute)
 	else:
-		return attribute_found
+		return -1
 	
 def print_object_attribute(object, attribute):
+# to refine
 	attribute_found = -1
 	columns=iter(object.columns)
 	values=iter(object.values)
@@ -114,7 +87,7 @@ def print_object_attribute(object, attribute):
 
 ######################################
 #	Classes
-class plwFile:
+class PlwFile:
 	instances = {}
 	def __init__(self, plwfile_txt_str, dpmHeader):
 		regexp = regex.compile(rb':OBJECT-NUMBER\n? (\d+)')
@@ -157,7 +130,7 @@ class plwFile:
 		self.txt = plwfile_txt_str
 		self.directory = file_directory.decode('utf-8')
 		
-		plwFile.instances[self.onb] = self
+		PlwFile.instances[self.onb] = self
 			
 class DpmHeader:
 	header_txt = ''
@@ -188,7 +161,7 @@ class DpmHeader:
 		for plwfile_txt in header_plwfiles:	
 			regexp = regex.compile(rb':OBJECT-NUMBER (\d+)')
 			onb = regexp.findall(plwfile_txt[0])
-			new_file = plwFile(plwfile_txt[0], self)
+			new_file = PlwFile(plwfile_txt[0], self)
 			header_files.append(new_file)
 			
 		self.id = id_str
@@ -220,81 +193,62 @@ class DpmHeader:
 			sys.stdout = saveout
 			output_file.close()
 
-class plw_format:
-	formats_crees = 0;
-	#tous les objets formats seront dans un dico {NOM_DU_FORMAT: objet}
+class ColumnsDef:
+	def __init__(self, text, format):
+		regexp = regex.compile(b'(:.*) :DATABASE-TYPE',regex.DOTALL)
+		ATT = regexp.findall(text)[0]
+		regexp = regex.compile(b':DATABASE-TYPE (.*) :LENGTH',regex.DOTALL)
+		DATABASE_TYPE = regexp.findall(text)[0]
+		regexp = regex.compile(b':LENGTH (.*) :NULLABLE',regex.DOTALL)
+		LENGTH = regexp.findall(text)[0]
+		regexp = regex.compile(b':NULLABLE (.*) :COMMENT',regex.DOTALL)
+		NULLABLE = regexp.findall(text)[0]
+		regexp = regex.compile(b':COMMENT (.*) :ENCRYPTION',regex.DOTALL)
+		COMMENT = regexp.findall(text)[0]
+		regexp = regex.compile(rb':ENCRYPTION (.*)\)',regex.DOTALL)
+		ENCRYPTION = regexp.findall(text)[0]
+		
+		self.ATT            = ATT
+		self.DATABASE_TYPE  = DATABASE_TYPE
+		self.LENGTH         = LENGTH
+		self.NULLABLE       = NULLABLE
+		self.COMMENT        = COMMENT
+		self.ENCRYPTION     = ENCRYPTION
+		self.VALUE			= b''
+		self.format = format
+
+class PlwFormat:
+	# Those 'format' objects instances will be in a dictionnary {FORMAT_NAME: object}
 	instances = {}
 	
 	def __init__(self,one_format_text):
-		plw_format.formats_crees += 1
-		# print(one_format_text)
         # E7: now some uppercases
 		regexp = regex.compile(b':TABLE-DEF (.*)',regex.I)
 		format_table_def = regexp.findall(one_format_text)[0]
-		# print(format_table_def)
-		# if format_table_def == []:
-			# print(one_format_text)
 		regexp = regex.compile(b':NAME "([^"]*)"')
 		format_name = regexp.findall(one_format_text)[0]
-		# print(format_name)
 		regexp = regex.compile(rb':TABLE-INDEX \((.*)\)')
 		format_table_index_brut = regexp.findall(one_format_text)
 		if len(format_table_index_brut) > 0:
 			format_table_index = format_table_index_brut[0]
 		else:
 			format_table_index = ''
-		# print(format_table_index)
-		
 		regexp = regex.compile(rb':COLUMNS (\(((?>[^()]+)|(?1))*\))',regex.DOTALL)
-		format_columns_brut = regexp.findall(one_format_text)[0][0][1:-1]
+		format_columns_raw = regexp.findall(one_format_text)[0][0][1:-1]
 		regexp = regex.compile(rb':ATT ',regex.DOTALL)
-		format_columns_separated = regexp.split(format_columns_brut)
-		# print(format_columns_separated)
+		format_columns_separated = regexp.split(format_columns_raw)
 		format_columns_fields = []
 		for each in format_columns_separated:
-			regexp = regex.compile(b':DATABASE-TYPE')
-			if len(regexp.findall(each)) == 0:
-				pass
-				# print('rejected')
-			else:
-				each_without_parenthesis = each[1:-1]
-				# print(each_without_parenthesis)
-				column_vect=[[]]
-				
-				regexp = regex.compile(b'(:.*) :DATABASE-TYPE',regex.DOTALL)
-				attribute = regexp.findall(each)[0]
-				column_vect = [[b':ATT',attribute]]
-				
-				regexp = regex.compile(b':DATABASE-TYPE (.*) :LENGTH',regex.DOTALL)
-				databasetype = regexp.findall(each)[0]
-				column_vect.append([b':DATABASE-TYPE',databasetype])
-				
-				regexp = regex.compile(b':LENGTH (.*) :NULLABLE',regex.DOTALL)
-				length = regexp.findall(each)[0]
-				column_vect.append([b':LENGTH',length])
-				
-				regexp = regex.compile(b':NULLABLE (.*) :COMMENT',regex.DOTALL)
-				nullable = regexp.findall(each)[0]
-				column_vect.append([b':NULLABLE',nullable])
-				
-				regexp = regex.compile(b':COMMENT (.*) :ENCRYPTION',regex.DOTALL)
-				comment = regexp.findall(each)[0]
-				column_vect.append([b':COMMENT',comment])
-				
-				regexp = regex.compile(rb':ENCRYPTION (.*)\)',regex.DOTALL)
-				encryption = regexp.findall(each)[0]
-				column_vect.append([b':ENCRYPTION',encryption])
-				
-				format_columns_fields.append(column_vect)
-		# print(format_columns_fields)
-		
+			regexp = regex.compile(b'(:.*) :DATABASE-TYPE',regex.DOTALL)
+			if len(regexp.findall(each)) > 0:
+				col = ColumnsDef(each, self)
+				format_columns_fields.append(col)
 		regexp = regex.compile(rb':OTHER-INDEXES (\(((?>[^()]+)|(?1))*\))')
 		format_other_indexes_brut = regexp.findall(one_format_text)
 		regexp = regex.compile(rb'\((:.*?)\)',regex.DOTALL)
 		format_other_indexes = ['']
 		if len(format_other_indexes_brut) > 0:
 			format_other_indexes = regexp.findall(format_other_indexes_brut[0][0])
-		# print(format_other_indexes)
 		
 		# objects that comes from a format with an empty :index will be based on the first of the :other indexes
 		format_keyID = format_table_index
@@ -305,7 +259,7 @@ class plw_format:
 				format_keyID = format_keyID.split(b" ")[0]
 		
 		# les clés du hash des formats sont en string car on va les utiliser pour créer des classes avec l'instanciateur de classe python type() qui veut un string en argument
-		plw_format.instances[format_table_def.decode('utf-8')] = self
+		PlwFormat.instances[format_table_def.decode('utf-8')] = self
 
 		format_dirname = regex.sub(rb'[:\?\*<>\|]',b'_',format_table_def)
 		
@@ -336,10 +290,9 @@ class plw_format:
 class Dpm_objects_metaclass(type):
 	classes_creees = 0
 	instances = {}
-	
-	def print_metaclass():
-		for key in Dpm_objects_metaclass.instances:
-			print("{}\t{}".format(key,len(Dpm_objects_metaclass.instances[key].instances)))
+	def listMetaclass():
+		for key in Dpm_objects_metaclass.instances.keys():
+			print(str(len(Dpm_objects_metaclass.instances[key].instances)).ljust(8) + key)
 			
 	def __new__(cls, name, bases, dict, format_obj):
 		return super(Dpm_objects_metaclass, cls).__new__(cls,name, bases, dict)
@@ -348,15 +301,16 @@ class Dpm_objects_metaclass(type):
 		Dpm_objects_metaclass.classes_creees += 1
 		Dpm_objects_metaclass.instances[name] = cls_obj
 		cls_obj.name = name
-		cls_obj.keyID = plw_format.instances[cls_obj.name].keyID
-		cls_obj.other_indexes = plw_format.instances[cls_obj.name].other_indexes
+		cls_obj.keyID = PlwFormat.instances[cls_obj.name].keyID
+		cls_obj.other_indexes = PlwFormat.instances[cls_obj.name].other_indexes
 
+		
 ######################################
 #	functions
 def Process_classes(dpm_text_bin):
 	# parse ":BEGIN-OF-FORMAT" block in the dpm
-	# instancies a plw_format object for each type found
-    # creates an object class for each type found in the format structure with attributes defined
+	# instancies a PlwFormat object for each type found
+    # creates an object class for each type found in the format structure with attributes defined in the format
 	
 	regexp = regex.compile(b':BEGIN-OF-FORMAT.*:END-OF-FORMAT',regex.DOTALL) # the entire bloc FORMAT
 	format_text = regexp.findall(dpm_text_bin)[0]
@@ -366,7 +320,7 @@ def Process_classes(dpm_text_bin):
 	has_the_error = regexp.findall(format_text)
 	if len(has_the_error) > 0:
 		format_text = regexp.sub(b'"Date value (spanish)"',format_text)
-	regexp = regex.compile(rb'(\(((?>[^()]+)|(?1))*\))',regex.DOTALL)
+	regexp = regex.compile(b'(\(((?>[^()]+)|(?1))*\))',regex.DOTALL)
 	format_text_list = regexp.findall(format_text)
 	for each in format_text_list:
 		# dump version
@@ -375,22 +329,22 @@ def Process_classes(dpm_text_bin):
 				regexp = regex.compile(rb':dump-version :([^\)]*)')
 				# print('DUMP VERSION: ' + regexp.findall(each[0])[0].decode('ascii'))
 			else:
-				my_format = plw_format(each[0])
+				my_format = PlwFormat(each[0])
 				
 	#################################################################
 	# creating a python class per object type : running the factory #
 	#################################################################
-	for each_format in plw_format.instances:
+	for each_format in PlwFormat.instances:
 		class_methods = {
-			# '__new__': create_object,
 			'__init__': init_object,
+			'show': show_object,
 			'print': write_object,
 			'instances': [],
 		}
 		# "format.table_def" is binary but we create the python class by passing a string (mandatory because the class instanciator wants a string)
-		my_format = plw_format.instances[each_format]
+		my_format = PlwFormat.instances[each_format]
 		cls = Dpm_objects_metaclass(my_format.table_def.decode('utf-8'), (DpmHeader,), class_methods, my_format)
-	print(str(len(plw_format.instances)) + ' format created')
+	print(str(len(PlwFormat.instances)) + ' format(s) instanciated')
 
 def Process_objects(dpm_text_str,out_dir):
 	i = 0
@@ -408,7 +362,7 @@ def Process_objects(dpm_text_str,out_dir):
 	# and we push in a dict: b'Name of the class' => block text of the objects
 	class_objets_dict = dict()
 	with Progress() as progress:
-		main_task = progress.add_task("[cyan]Split the data...", total = len(class_object_text))
+		main_task = progress.add_task("[red]Split the data...", total = len(class_object_text))
 		for each in class_object_text:
 			# add a final \n removed when splitted ^Z$
 			progress.advance(main_task, 1)
@@ -421,36 +375,36 @@ def Process_objects(dpm_text_str,out_dir):
 			lines_objects.pop(0)
 			class_objets_dict[class_name] = lines_objects
 
-	# instanciation of the objects
-	with Progress() as progress:
+		# instanciation of the objects
 		main_task = progress.add_task("[cyan]Instanciating objects...", total = len(class_objets_dict))
 		sub_task = progress.add_task("[green]Class ...", total = 0)
 		for eachClass in class_objets_dict:
-			progress.update(sub_task, total=15, completed=0)
-			progress.advance(main_task, 1)
+			progress.update(sub_task, total=len(class_objets_dict[eachClass]), completed=0)
 			for line in class_objets_dict[eachClass]:
-				my_format = plw_format.instances[eachClass.decode('utf-8')] # search the format, describing the class
+				my_format = PlwFormat.instances[eachClass.decode('utf-8')] # search the format, describing the class
 				my_class = Dpm_objects_metaclass.instances[eachClass.decode('utf-8')] # search the class, describing the object
 				my_obj = my_class(eachClass, my_format.columns, line, my_class) # instanciate the object
 				i+=1
 				# Python object for planisware objects is created!
 				my_format.objects.append(my_obj)
-				# completion of attributes plwFile, directory and path of each object
+				# completion of attributes PlwFile, directory and path of each object
 				# some object without dataset
 				rank = check_object_attribute(my_obj, b':DATASET')
 				if my_format.table_def.decode('utf-8') == '#%GENERIC-IO:OPX2-USER:' or my_format.table_def.decode('utf-8') == '#%GENERIC-IO:USER-GROUP:' or my_format.table_def.decode('utf-8') == '#%GENERIC-IO:USER-IN-GROUP:':
-				# For these classes, the dataset is not relevant (onb = 1)
+				# For these classes, there is a dataset but is not relevant (onb = 1)
 					rank = -1;
 				if rank > -1:
-					my_obj.plwFile = plwFile.instances[my_obj.values[rank]]  # plwFile is a python object
-					my_obj.path = os.path.join(out_dir, main_directory, files_subdirectory, my_obj.plwFile.directory, my_format.dirname, my_obj.filename)
-					my_obj.directory = os.path.join(out_dir, main_directory, files_subdirectory, my_obj.plwFile.directory, my_format.dirname)
+					my_obj.PlwFile = PlwFile.instances[my_obj.values[rank]]  # PlwFile is a python object
+					my_obj.path = os.path.join(out_dir, main_directory, files_subdirectory, my_obj.PlwFile.directory, my_format.dirname, my_obj.filename)
+					my_obj.directory = os.path.join(out_dir, main_directory, files_subdirectory, my_obj.PlwFile.directory, my_format.dirname)
 				else:
-					my_obj.plwFile = ''
+					my_obj.PlwFile = ''
 					my_obj.path = os.path.join(out_dir, main_directory, files_subdirectory, objects_without_file_directory, my_format.dirname, my_obj.filename)
 					my_obj.directory = os.path.join(out_dir, main_directory, files_subdirectory, objects_without_file_directory, my_format.dirname)
-				progress.update(sub_task, description = "[green]Class completion " + eachClass.decode('utf-8') + "...", advance=1)
-	print(str(i) + ' objects created')
+				progress.update(sub_task, description = "[green]Class " + eachClass.decode('utf-8') + "...", advance=1)
+			progress.advance(main_task, 1)
+			
+	print(str(i) + ' object(s) instanciated')
 	
 def Create_directory_structure (output_path, dpm):
 	# creation of the folders
@@ -479,18 +433,18 @@ def Create_directory_structure (output_path, dpm):
 			i+=1
 
 		# Creation des dossiers NOM_DU_FICHIER_PLW
-		for each in plwFile.instances:
-			plwFile_path = os.path.join(files_path, plwFile.instances[each].directory)
-			if not(os.path.isdir(plwFile_path)):
-				os.mkdir(plwFile_path)
+		for each in PlwFile.instances:
+			PlwFile_path = os.path.join(files_path, PlwFile.instances[each].directory)
+			if not(os.path.isdir(PlwFile_path)):
+				os.mkdir(PlwFile_path)
 				i+=1
 
 	#creation de l'arbo des objets
 	path_vect = []
-	for each_format in plw_format.instances:
+	for each_format in PlwFormat.instances:
 		for each_object in Dpm_objects_metaclass.instances[each_format].instances:
 			object_type_path = os.path.join(files_path, each_object.directory)
-			if each_object.plwFile == '':
+			if each_object.PlwFile == '':
 				without_file_path = os.path.join(files_path, objects_without_file_directory)
 				if not(os.path.isdir(without_file_path)):
 					os.mkdir(without_file_path)
@@ -516,10 +470,10 @@ def extract_headers(output_path):
 		output_file = open(header_file, 'wb')
 		output_file.write(DpmHeader.header_txt)
 		output_file.close()
-		for each_file in plwFile.instances:
+		for each_file in PlwFile.instances:
 			file_file = os.path.join(header_dir, each_file.decode('utf-8'))
 			output_file = open(file_file, 'wb')
-			output_file.write(plwFile.instances[each_file].txt)
+			output_file.write(PlwFile.instances[each_file].txt)
 			output_file.close()
 			
 	if os.path.isdir(format_dir):
@@ -529,11 +483,11 @@ def extract_headers(output_path):
 		output_file = open(format_file, 'wb')
 		output_file.write(DpmHeader.formats_txt)
 		output_file.close()
-		for each_format in plw_format.instances:
-			format_elt_file = os.path.join(format_dir, plw_format.instances[each_format].dirname)
+		for each_format in PlwFormat.instances:
+			format_elt_file = os.path.join(format_dir, PlwFormat.instances[each_format].dirname)
 			output_file = open(format_elt_file, 'wb')
-			output_file.write(plw_format.instances[each_format].table_def + b'\n')
-			output_file.write(plw_format.instances[each_format].txt + b'\n')
+			output_file.write(PlwFormat.instances[each_format].table_def + b'\n')
+			output_file.write(PlwFormat.instances[each_format].txt + b'\n')
 			output_file.close()
 			
 	if os.path.isdir(data_dir):
@@ -546,7 +500,7 @@ def extract_headers(output_path):
 		output_file.close()	
 			
 def extract_objects(output_path):
-	for each_format in plw_format.instances:
+	for each_format in PlwFormat.instances:
 		all_object_in_class_have_a_name = 1
 		number_of_anonymous_objects = 0
 		object_created = 0
@@ -554,63 +508,105 @@ def extract_objects(output_path):
 			bSkip = input(each_format.decode('utf-8') + ' ' + + ' objects... skip? y/n:')
 			if bSkip == 'y':
 				pass
-			else:
-				for each_object in Dpm_objects_metaclass.instances[each_format].instances:
-					object_have_a_name = 0
-					
-					# gestion des users parameters (indexés via 2 champs, USER/KEY). Chaque users parameters d'un user seront sauvés dans un fichier txt nommé "onb_de_l'user-N°increment"
-					# a définir
+		else:
+			for each_object in Dpm_objects_metaclass.instances[each_format].instances:
+				object_have_a_name = 0
+				
+				# gestion des users parameters (indexés via 2 champs, USER/KEY). Chaque users parameters d'un user seront sauvés dans un fichier txt nommé "onb_de_l'user-N°increment"
+				# a définir
 
-					if len(each_object.filename) > 50:
-						object_have_a_name = 0
+				if len(each_object.filename) > 50:
+					object_have_a_name = 0
+				else:
+					if output_path != '':
+						object_path = os.path.join(output_path, main_directory, files_subdirectory, each_object.path, each_object.filename)
 					else:
-						if output_path != '':
-							object_path = os.path.join(output_path, main_directory, files_subdirectory, each_object.path, each_object.filename)
-						else:
-							object_path = os.path.join(main_directory, files_subdirectory, each_object.path, each_object.filename)
-						if not(os.path.isfile(each_object.path)):
-							write_object(each_object, each_object.path)
-						object_have_a_name = 1
-						object_created = object_created + 1
-						print(plw_format.instances[each_format].name.decode('utf-8'),object_created,'                ' ,end = '\r')
-					if object_have_a_name == 0:
-						print('##################',each_object.filename)
-						all_object_in_class_have_a_name = 0
-						number_of_anonymous_objects = number_of_anonymous_objects + 1
-		print(plw_format.instances[each_format].name.decode('utf-8'),object_created,'                ' )
+						object_path = os.path.join(main_directory, files_subdirectory, each_object.path, each_object.filename)
+					if not(os.path.isfile(each_object.path)):
+						write_object(each_object, each_object.path)
+					object_have_a_name = 1
+					object_created = object_created + 1
+					print(PlwFormat.instances[each_format].name.decode('utf-8'),object_created,'                ' ,end = '\r')
+				if object_have_a_name == 0:
+					print('##################',each_object.filename)
+					all_object_in_class_have_a_name = 0
+					number_of_anonymous_objects = number_of_anonymous_objects + 1
+		print(PlwFormat.instances[each_format].name.decode('utf-8'),object_created,'                ' )
 		if number_of_anonymous_objects > 0:
-			print(number_of_anonymous_objects,'anonymous object found in class',plw_format.instances[each_format].table_def.decode('utf-8'),' not extracted. keyID was \''+plw_format.instances[each_format].keyID.decode('utf-8')+'\'')
+			print(number_of_anonymous_objects,'anonymous object found in class',PlwFormat.instances[each_format].table_def.decode('utf-8'),' not extracted. keyID was \''+PlwFormat.instances[each_format].keyID.decode('utf-8')+'\'')
 		if all_object_in_class_have_a_name == 0:
-			print(plw_format.instances[each_format].table_def, ' pas d\'onb, pas extrait')
+			print(PlwFormat.instances[each_format].table_def, ' no onb, no extract')
 
 def print_results(output_path):
 	# output_file = open(output_path, 'w', encoding = 'utf-8')
 	output_file = open(output_path, 'w', encoding = 'ISO-8859-1')
 	saveout = sys.stdout
 	sys.stdout = output_file
-	Dpm_objects_metaclass.print_metaclass()
+	Dpm_objects_metaclass.listMetaclass()
 	sys.stdout = saveout
 	output_file.close()
+
+def checkboxChooser(sKey, sQuestion, lList):
+    questions = [inquirer.Checkbox(
+        sKey,
+        message=sQuestion,
+        choices=lList,
+        carousel=True
+    )]
+    answers = inquirer.prompt(questions)  # returns a dict
+    return answers
 	
+def listChooser(sKey, sQuestion, lList):
+    questions = [inquirer.List(
+        sKey,
+        message=sQuestion,
+        choices=lList,
+        carousel=True
+    )]
+    answers = inquirer.prompt(questions)  # returns a dict
+    return answers
+
+def browseObject():
+	while True:
+		dictTableDef = listChooser('Class','Browse a table definition',[(str(len(x.instances)).ljust(8) + x.name,x) for x in Dpm_objects_metaclass.instances.values()])
+		# dictObject = listChooser('Object','instances of ' + dictTableDef['Class'].name, dictTableDef['Class'].instances)
+		dictObject = listChooser('Object','instances of ' + dictTableDef['Class'].name, [(x.id.decode('utf-8'), x) for x in dictTableDef['Class'].instances])
+		dictObject['Object'].show()
+		print('\n')
+		input('<Enter> for another one.')
+		clear()
+
+def clear():
+    if os.name == 'nt': # for windows
+        _ = os.system('cls')
+    else: # for mac and linux(here, os.name is 'posix')
+        _ = os.system('clear')
+
+def signal_handler(sig, frame):
+    print('Thanks')
+    sys.exit(0)
+
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("dpmFile", help="path/to/...dpm.gz")
-    args = parser.parse_args()
-    outputPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'output')
-    dpmText = b''
-    with gzip.open(args.dpmFile, 'rb') as dpmFile:
-        dpmText = dpmFile.read()
-    myHeader = DpmHeader(dpmText,'Dpm1')
-    print('1-Process_classes')
-    Process_classes(dpmText)
-    print('2-Process object')
-    Process_objects(dpmText, outputPath)
-    print('3-Create directory structure')
-    Create_directory_structure(outputPath, myHeader)
-    # print('Extract header')
-    extract_headers(outputPath)
-    print('4-Extract objects')
-    extract_objects(outputPath)
+	signal.signal(signal.SIGINT, signal_handler)
+	parser = argparse.ArgumentParser()
+	parser.add_argument("dpmFile", help="path/to/...dpm.gz")
+	parser.add_argument("-b", "--browse", action='store_true', help="Prompted for object visualisation")
+	args = parser.parse_args()
+	outputPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'output')
+	dpmText = b''
+	with gzip.open(args.dpmFile, 'rb') as dpmFile:
+		dpmText = dpmFile.read()
+	myHeader = DpmHeader(dpmText,'Dpm1')
+	Process_classes(dpmText)
+	Process_objects(dpmText, outputPath)
+	# Dpm_objects_metaclass.listMetaclass()
+	if args.browse:
+		browseObject()
+	# print('3-Create directory structure')
+	Create_directory_structure(outputPath, myHeader)
+	extract_headers(outputPath)
+    # print('4-Extract objects')
+	extract_objects(outputPath)
 				
 main_directory = 'DPM_OUT'
 files_subdirectory = 'FILES'
