@@ -591,24 +591,12 @@ def signal_handler(sig, frame):
 def main():
 	signal.signal(signal.SIGINT, signal_handler)
 	parser = argparse.ArgumentParser()
-	parser.add_argument("dpmFile", help="path/to/...dpm.gz")
+	parser.add_argument("directory", help="path/to/.../DPM_OUT (created with dpm_extract.py)")
 	parser.add_argument("-b", "--browse", action='store_true', help="Prompted for object visualisation")
 	args = parser.parse_args()
 	outputPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'output')
-	dpmText = b''
-	with gzip.open(args.dpmFile, 'rb') as dpmFile:
-		dpmText = dpmFile.read()
-	myHeader = DpmHeader(dpmText,'Dpm1')
-	Process_classes(dpmText)
-	Process_objects(dpmText, outputPath)
-	# Dpm_objects_metaclass.listMetaclass()
-	if args.browse:
-		browseObject()
-	# print('3-Create directory structure')
-	Create_directory_structure(outputPath, myHeader)
-	extract_headers(outputPath)
-    # print('4-Extract objects')
-	extract_objects(outputPath)
+	if os.path.isdir(args.directory):
+		
 				
 main_directory = 'DPM_OUT'
 files_subdirectory = 'FILES'
