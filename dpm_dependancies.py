@@ -150,31 +150,3 @@ objects_without_file_directory = '#OTHERS'
 
 if __name__ == '__main__':
     main()
-
-
-if os.path.isdir(inputPath) and os.path.basename(inputPath) == main_directory:
-	for root, dirs, files in os.walk(inputPath):
-		if format_subdirectory in dirs and files_subdirectory in dirs:
-			formatPath = os.path.join(inputPath,format_subdirectory)
-			filesPath = os.path.join(inputPath,files_subdirectory)
-			otherPath = os.path.join(inputPath,files_subdirectory,objects_without_file_directory)
-			for fileFormat in os.listdir(formatPath):
-				if regex.match('^#%',fileFormat):
-					with open (os.path.join(formatPath,fileFormat), 'rb') as fin:
-						text = fin.read()
-						PlwFormat(text)
-			for dirFile in os.listdir(filesPath):
-				if dirFile != objects_without_file_directory:
-					for dirType in os.listdir(os.path.join(filesPath,dirFile)):
-						for fileObject in os.listdir(os.path.join(dirType,filesPath,dirFile,dirType)):
-							with open (os.path.join(dirType,filesPath,dirFile,dirType,fileObject), 'rb') as fin:
-								text = fin.read()
-								PlwObject(text)
-			for dirOtherType in os.listdir(otherPath):
-				for fileObject in os.listdir(os.path.join(otherPath,dirOtherType)):
-					with open (os.path.join(otherPath,dirOtherType,fileObject), 'rb') as fin:
-						text = fin.read()
-						PlwObject(text)
-		break
-else:
-	print(args.directory + ' is not a base directory of an extracted dpm (.../' + main_directory + ')')
