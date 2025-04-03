@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 import os
 import regex
-
-import io
-import gzip
-import sys
 import regex
-import hashlib
 import argparse
 import inquirer # pip install inquirer
 from rich.progress import Progress # pip install rich
 import signal
+
+# import io
+# import gzip
+# import sys
+# import hashlib
 
 class ColumnsDef:
 	def __init__(self, text):
@@ -95,10 +95,78 @@ class PlwObject:
 			self.values.append(regex.split(b'\t',line)[1])
 		if self.format.keyID != b'NIL':
 			self.id = self.values[self.columns.index(self.format.keyID)]
+			print(self.id)
 			
 def signal_handler(sig, frame):
     print('Thanks')
     sys.exit(0)
+
+def processFormats(formatPath):
+	pathList = []
+	for fileFormat in os.listdir(formatPath):
+		if regex.match('^#%',fileFormat):
+			pathList.append(os.path.join(formatPath,fileFormat))
+	with Progress() as progress:
+		main_task = progress.add_task("[cyan]Processing table definition...", total = len(pathList))
+		for file in pathList:
+			progress.advance(main_task, 1)
+			with open (file, 'rb') as fin:
+				text = fin.read()
+				PlwFormat(text)
+
+def processObjectsWithFiles(filesPath):
+	pathList = []
+	for dirFile in os.listdir(filesPath):
+		if dirFile != objects_without_file_directory:
+			for dirType in os.listdir(os.path.join(filesPath,dirFile)):
+				for fileObject in os.listdir(os.path.join(dirType,filesPath,dirFile,dirType)):
+					pathList.append(os.path.join(dirType,filesPath,dirFile,dirType,fileObject))
+	with Progress() as progress:
+		main_task = progress.add_task("[cyan]Processing objects with files...", total = len(pathList))
+		for file in pathList:
+			progress.advance(main_task, 1)
+			with open(file, 'rb') as fin:
+				text = fin.read()
+				PlwObject(text)
+				print(file)
+
+def processObjectsWithoutFiles(otherPath):
+	pathList = []
+	for dirOtherType in os.listdir(otherPath):
+		for fileObject in os.listdir(os.path.join(otherPath,dirOtherType)):
+			pathList.append(os.path.join(otherPath,dirOtherType,fileObject))
+	with Progress() as progress:
+		main_task = progress.add_task("[cyan]Processing objects without files...", total = len(pathList))
+		for file in pathList:
+			progress.advance(main_task, 1)
+			with open(file, 'rb') as fin:
+				text = fin.read()
+				PlwObject(text)
+
+def listChooser(sKey, sQuestion, lList):
+    questions = [inquirer.List(
+        sKey,
+        message=sQuestion,
+        choices=lList,
+        carousel=True
+    )]
+    answers = inquirer.prompt(questions)  # returns a dict
+    return answers
+
+def browseObject():
+	while True:
+		dictTableDef = listChooser('Class','Browse a table definition',[(str(len(x.objects)).ljust(8) + x.name.decode('utf-8'),x) for x in PlwFormat.instances.values()])
+		dictObject = listChooser('Object','instances of ' + dictTableDef['Class'].table_def.decode('utf-8'), [(x.id.decode('utf-8'), x) for x in dictTableDef['Class'].objects])
+		dictObject['Object'].show()
+		print('\n')
+		input('<Enter> for another one.')
+		clear()
+
+def clear():
+    if os.name == 'nt': # for windows
+        _ = os.system('cls')
+    else: # for mac and linux(here, os.name is 'posix')
+        _ = os.system('clear')
 
 def main():
 	signal.signal(signal.SIGINT, signal_handler)
@@ -110,7 +178,9 @@ def main():
 	inputPath = args.directory
 	formatPath = ''
 	filesPath = ''
-	if os.path.isdir(inputPath) and os.path.basename(inputPath) == main_directory:
+	if os.path.isdir(inputPath) and os.path.basename(inputPath) != main_directory:
+		print(args.directory + ' is not a base directory of an extracted dpm (.../' + main_directory + ')')
+	else:
 		formatPath = ''
 		filesPath = ''
 		otherPath = ''
@@ -120,26 +190,11 @@ def main():
 				filesPath = os.path.join(inputPath,files_subdirectory)
 				otherPath = os.path.join(inputPath,files_subdirectory,objects_without_file_directory)
 				break
-		for fileFormat in os.listdir(formatPath):
-			if regex.match('^#%',fileFormat):
-				with open (os.path.join(formatPath,fileFormat), 'rb') as fin:
-					text = fin.read()
-					form = PlwFormat(text)
-		for dirFile in os.listdir(filesPath):
-			if dirFile != objects_without_file_directory:
-				for dirType in os.listdir(os.path.join(filesPath,dirFile)):
-					for fileObject in os.listdir(os.path.join(dirType,filesPath,dirFile,dirType)):
-						with open (os.path.join(dirType,filesPath,dirFile,dirType,fileObject), 'rb') as fin:
-							text = fin.read()
-							PlwObject(text)
-		for dirOtherType in os.listdir(otherPath):
-			for fileObject in os.listdir(os.path.join(otherPath,dirOtherType)):
-				with open (os.path.join(otherPath,dirOtherType,fileObject), 'rb') as fin:
-					text = fin.read()
-					PlwObject(text)
-	else:
-		print(args.directory + ' is not a base directory of an extracted dpm (.../' + main_directory + ')')
-
+		processFormats(formatPath)
+		processObjectsWithFiles(filesPath)
+		processObjectsWithoutFiles(otherPath)
+	if args.browse:
+		browseObject()
 
 main_directory = 'DPM_OUT'
 files_subdirectory = 'FILES'
