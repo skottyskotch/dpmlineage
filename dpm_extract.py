@@ -9,32 +9,32 @@ import argparse
 import inquirer # pip install inquirer
 from rich.progress import Progress # pip install rich
 import signal
+import copy
 
 #######################################
 #	Function for dynamic classes
-def init_object(self, type, columns, line, cls):
+def init_object(self, plwFormat, tableDefColumns, dpmLine, cls):
 	# object identifier: value of the attribute marked as INDEX of the table-def, or the concatenation of the OTHER-INDEXES values
-	values = line.split(b'\t')
+	# or BLOB_OFFSET if :BLOB is marked as INDEX
+	values = dpmLine.split(b'\t')
 	values.pop(0)
 	obj_identifier = ''
-	if cls.keyID != b'NIL':
-		obj_identifier = values[[x.ATT for x in columns].index(cls.keyID)]
+	if cls.keyID != b'NIL' and cls.keyID != b':BLOB':
+		obj_identifier = values[[x.ATT for x in tableDefColumns].index(cls.keyID)]
+	elif cls.keyID == b':BLOB':
+		obj_identifier = values[[x.ATT for x in tableDefColumns].index(cls.keyID)] + b'_' + values[[x.ATT for x in tableDefColumns].index(b':OFFSET')]
 	else:
 		obj_identifiers = []
 		for eachKey in cls.other_indexes:
-			obj_identifiers.append(values[[x.ATT for x in columns].index(eachKey)])
+			obj_identifiers.append(values[[x.ATT for x in tableDefColumns].index(eachKey)])
 		obj_identifier = b"_".join(obj_identifiers)
 	filename = obj_identifier.decode('utf-8')
 	# for the classes with a :BLOB keyID, this identifier is not unique for the objects. filenames are ':BLOB_' + md5hash
-	if cls.keyID.decode('utf-8') == ':BLOB':
-		md5hash = hashlib.md5(line).hexdigest()
-		filename = filename + '_' + md5hash
-	for val in values:
-		columns[values.index(val)].VALUE = val
-	self.type = type
-	type_directory = regex.sub(rb'[:\?\*<>\|]',b'_',type)
-	self.type_directory = type_directory
-	self.columns = columns
+	# if cls.keyID.decode('utf-8') == ':BLOB':
+		# md5hash = hashlib.md5(dpmLine).hexdigest()
+		# filename = filename + '_' + md5hash
+	self.plwFormat = PlwFormat.instances[plwFormat.decode('utf-8')]
+	self.type_directory = regex.sub(rb'[:\?\*<>\|]',b'_',plwFormat)
 	self.values = values
 	self.PlwFile = ''
 	self.directory = ''
@@ -46,19 +46,19 @@ def init_object(self, type, columns, line, cls):
 		self.id = obj_identifier.decode('utf-8')+'-'+str(len(cls.instances))
 
 def show_object(object):
-	nMaxAttributeNameLength = max([len(x.ATT) for x in object.columns])
-	print('****** type: '			+ object.type.decode('utf-8'))
+	nMaxAttributeNameLength = max([len(x.ATT) for x in object.plwFormat.columns])
+	print('****** type: '			+ object.plwFormat.table_def.decode('utf-8'))
 	print('id: '					+ object.id.decode('utf-8'))
 	print('filename: '				+ object.filename)
 	print('attributes/values: ')
-	print(b'\n'.join([col.ATT.ljust(nMaxAttributeNameLength+1) + col.VALUE for col in object.columns]).decode('utf-8'))
+	print(b'\n'.join([col.ATT.ljust(nMaxAttributeNameLength+1) + object.values[object.plwFormat.columns.index(col)] for col in object.plwFormat.columns]).decode('utf-8'))
 
 def write_object(object, object_path=1):
 	if object_path != '':
 		output_file = open(object_path, 'wb')
-	if len(object.columns) == len(object.values):
-		output_file.write(object.type + b'\n')
-		output_file.write(b'\n'.join([col.ATT + b'\t' + col.VALUE for col in object.columns]))
+	if len(object.plwFormat.columns) == len(object.values):
+		output_file.write(object.plwFormat.table_def + b'\n')
+		output_file.write(b'\n'.join([col.ATT + b'\t' + object.values[object.plwFormat.columns.index(col)] for col in object.plwFormat.columns]))
 	else:
 		print("columns/values inconsistent".encode('utf-8'))
 	if object_path != '':
@@ -66,8 +66,8 @@ def write_object(object, object_path=1):
 				
 def check_object_attribute(object, attribute):
 	# search if object posses the attribute, returns the rank or -1 if not found
-	if attribute in [col.ATT for col in object.columns]:
-		return [col.ATT for col in object.columns].index(attribute)
+	if attribute in [col.ATT for col in object.plwFormat.columns]:
+		return [col.ATT for col in object.plwFormat.columns].index(attribute)
 	else:
 		return -1
 	
@@ -360,7 +360,7 @@ def Process_objects(dpm_text_str,out_dir):
 	class_object_text.pop();
 	# for each class we separate the 1st line (name of the class) from the rest (data)
 	# and we push in a dict: b'Name of the class' => block text of the objects
-	class_objets_dict = dict()
+	class_objects_dict = dict()
 	with Progress() as progress:
 		main_task = progress.add_task("[red]Split the data...", total = len(class_object_text))
 		for each in class_object_text:
@@ -368,22 +368,23 @@ def Process_objects(dpm_text_str,out_dir):
 			progress.advance(main_task, 1)
 			each = each + b'\n'
 			regexp = regex.compile(b'(.*)\n')
-			class_name = regex.findall(regexp,each)[0]
+			plwFormatName = regex.findall(regexp,each)[0]
 			regexp = regex.compile(b'(.*)\n')
 			# split the lines
 			lines_objects = regex.findall(regexp,each)
 			lines_objects.pop(0)
-			class_objets_dict[class_name] = lines_objects
+			class_objects_dict[plwFormatName] = lines_objects
 
 		# instanciation of the objects
-		main_task = progress.add_task("[cyan]Instanciating objects...", total = len(class_objets_dict))
+	with Progress() as progress:
+		main_task = progress.add_task("[cyan]Instanciating objects...", total = len(class_objects_dict))
 		sub_task = progress.add_task("[green]Class ...", total = 0)
-		for eachClass in class_objets_dict:
-			progress.update(sub_task, total=len(class_objets_dict[eachClass]), completed=0)
-			for line in class_objets_dict[eachClass]:
-				my_format = PlwFormat.instances[eachClass.decode('utf-8')] # search the format, describing the class
-				my_class = Dpm_objects_metaclass.instances[eachClass.decode('utf-8')] # search the class, describing the object
-				my_obj = my_class(eachClass, my_format.columns, line, my_class) # instanciate the object
+		for plwFormatName in class_objects_dict:
+			progress.update(sub_task, total=len(class_objects_dict[plwFormatName]), completed=0)
+			for dpmLine in class_objects_dict[plwFormatName]:
+				my_format = PlwFormat.instances[plwFormatName.decode('utf-8')] # search the format, describing the class
+				my_class = Dpm_objects_metaclass.instances[plwFormatName.decode('utf-8')] # search the class, describing the object
+				my_obj = my_class(plwFormatName, my_format.columns, dpmLine, my_class) # instanciate the object
 				i+=1
 				# Python object for planisware objects is created!
 				my_format.objects.append(my_obj)
@@ -401,7 +402,7 @@ def Process_objects(dpm_text_str,out_dir):
 					my_obj.PlwFile = ''
 					my_obj.path = os.path.join(out_dir, main_directory, files_subdirectory, objects_without_file_directory, my_format.dirname, my_obj.filename)
 					my_obj.directory = os.path.join(out_dir, main_directory, files_subdirectory, objects_without_file_directory, my_format.dirname)
-				progress.update(sub_task, description = "[green]Class " + eachClass.decode('utf-8') + "...", advance=1)
+				progress.update(sub_task, description = "[green]Class " + plwFormatName.decode('utf-8') + "...", advance=1)
 			progress.advance(main_task, 1)
 			
 	print(str(i) + ' object(s) instanciated')
@@ -570,9 +571,9 @@ def listChooser(sKey, sQuestion, lList):
 
 def browseObject():
 	while True:
-		dictTableDef = listChooser('Class','Browse a table definition',[(str(len(x.instances)).ljust(8) + x.name,x) for x in Dpm_objects_metaclass.instances.values()])
-		# dictObject = listChooser('Object','instances of ' + dictTableDef['Class'].name, dictTableDef['Class'].instances)
-		dictObject = listChooser('Object','instances of ' + dictTableDef['Class'].name, [(x.id.decode('utf-8'), x) for x in dictTableDef['Class'].instances])
+		dictTableDef = listChooser('Class','Browse a table definition',[(str(len(tableDef.instances)).ljust(8) + tableDef.name, tableDef) for tableDef in Dpm_objects_metaclass.instances.values()])
+		objectsList = sorted(dictTableDef['Class'].instances, key=lambda o: o.id)
+		dictObject = listChooser('Object','instances of ' + dictTableDef['Class'].name, [(obj.id.decode('utf-8'), obj) for obj in objectsList])
 		dictObject['Object'].show()
 		print('\n')
 		input('<Enter> for another one.')

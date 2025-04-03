@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import os
 import regex
-import regex
 import argparse
 import inquirer # pip install inquirer
 from rich.progress import Progress # pip install rich
@@ -66,9 +65,14 @@ class PlwFormat:
 				format_keyID = format_keyID.split(b" ")[0]
 		# les clés du hash des formats sont en string car on va les utiliser pour créer des classes avec l'instanciateur de classe python type() qui veut un string en argument
 		PlwFormat.instances[format_table_def.decode('utf-8')] = self
-		
 		format_dirname = regex.sub(rb'[:\?\*<>\|]',b'_',format_table_def)
-		
+		searchedByONB = False
+		onb = 0
+		if b':OBJECT-NUMBER' in [col.ATT for col in columns]:
+			searchedByONB = True
+		searchedByNAME = False
+		if b':NAME' in [col.ATT for col in columns]:
+			searchedByNAME = True
 		self.table_def 		= format_table_def
 		self.name 			= format_name
 		self.columns 		= columns
@@ -79,24 +83,52 @@ class PlwFormat:
 		self.path 			= ''
 		self.keyID 			= format_keyID
 		self.txt 			= text
+		self.searchedByONB	= searchedByONB
+		self.searchedByNAME	= searchedByNAME
 		self.objects 		= []
 
 class PlwObject:
-	# instances = {}
-	def __init__(self, text):
+	instances = {}
+	def __init__(self, path):
+		text = ''
+		with open(path, 'rb') as fin:
+			text = fin.read()
 		pattern = regex.compile(rb'^(#.*)$',regex.MULTILINE)
+		self.path = path
 		self.format = PlwFormat.instances[pattern.findall(text)[0].decode('utf-8')]
 		self.format.objects.append(self)
 		self.callers = []
-		self.columns = [col.ATT for col in self.format.columns]
 		self.values = []
 		self.id = b'NIL'
+		self.name = ''
+		self.onb = ''
+		tableDefColumns = self.format.columns
 		for line in regex.split(b'\n',text)[1:]:
 			self.values.append(regex.split(b'\t',line)[1])
-		if self.format.keyID != b'NIL':
-			self.id = self.values[self.columns.index(self.format.keyID)]
-			print(self.id)
-			
+		if self.format.keyID != b'NIL' and self.format.keyID != b':BLOB':
+			self.id = self.values[[x.ATT for x in tableDefColumns].index(self.format.keyID)]
+		elif self.format.keyID == b':BLOB':
+			self.id = self.values[[x.ATT for x in tableDefColumns].index(self.format.keyID)] + b'_' + self.values[[x.ATT for x in tableDefColumns].index(b':OFFSET')]
+		else:
+			obj_identifiers = []
+			for eachKey in self.format.other_indexes:
+				obj_identifiers.append(self.values[[x.ATT for x in tableDefColumns].index(eachKey)])
+			self.id = b"_".join(obj_identifiers)
+		if self.format.searchedByNAME:
+			self.name = self.values[[col.ATT for col in self.format.columns].index(b':NAME')]
+		if self.format.searchedByONB:
+			self.onb = self.values[[col.ATT for col in self.format.columns].index(b':OBJECT-NUMBER')]
+		PlwObject.instances[self.id] = self
+
+	def show(self):
+		nMaxAttributeNameLength = max([len(x.ATT) for x in self.format.columns])
+		print('****** type: '			+ self.format.table_def.decode('utf-8'))
+		print('key: '					+ self.format.keyID.decode('utf-8'))
+		print('path: '					+ self.path)
+		print('id: '					+ self.id.decode('utf-8'))
+		print('attributes/values: ')
+		print(b'\n'.join([col.ATT.ljust(nMaxAttributeNameLength+1) + self.values[self.format.columns.index(col)] for col in self.format.columns]).decode('utf-8'))
+
 def signal_handler(sig, frame):
     print('Thanks')
     sys.exit(0)
@@ -125,10 +157,7 @@ def processObjectsWithFiles(filesPath):
 		main_task = progress.add_task("[cyan]Processing objects with files...", total = len(pathList))
 		for file in pathList:
 			progress.advance(main_task, 1)
-			with open(file, 'rb') as fin:
-				text = fin.read()
-				PlwObject(text)
-				print(file)
+			PlwObject(file)
 
 def processObjectsWithoutFiles(otherPath):
 	pathList = []
@@ -139,9 +168,7 @@ def processObjectsWithoutFiles(otherPath):
 		main_task = progress.add_task("[cyan]Processing objects without files...", total = len(pathList))
 		for file in pathList:
 			progress.advance(main_task, 1)
-			with open(file, 'rb') as fin:
-				text = fin.read()
-				PlwObject(text)
+			PlwObject(file)
 
 def listChooser(sKey, sQuestion, lList):
     questions = [inquirer.List(
@@ -155,8 +182,9 @@ def listChooser(sKey, sQuestion, lList):
 
 def browseObject():
 	while True:
-		dictTableDef = listChooser('Class','Browse a table definition',[(str(len(x.objects)).ljust(8) + x.name.decode('utf-8'),x) for x in PlwFormat.instances.values()])
-		dictObject = listChooser('Object','instances of ' + dictTableDef['Class'].table_def.decode('utf-8'), [(x.id.decode('utf-8'), x) for x in dictTableDef['Class'].objects])
+		dictTableDef = listChooser('Class','Browse a table definition',[(str(len(x.objects)).ljust(8) + x.keyID.decode('utf-8').ljust(20) + x.name.decode('utf-8'),x) for x in PlwFormat.instances.values()])
+		objectsList = sorted(dictTableDef['Class'].objects, key=lambda o: o.id)
+		dictObject = listChooser('Object','instances of ' + dictTableDef['Class'].table_def.decode('utf-8'), [(x.id.decode('utf-8'), x) for x in objectsList])
 		dictObject['Object'].show()
 		print('\n')
 		input('<Enter> for another one.')
@@ -168,6 +196,46 @@ def clear():
     else: # for mac and linux(here, os.name is 'posix')
         _ = os.system('clear')
 
+def searchDependancies(obj, verbose):
+	callers = []
+	matchByNAME = []
+	matchByONB = []
+	for plwFormat in PlwFormat.instances.values():
+		for otherObj in plwFormat.objects:
+			if obj.format.searchedByONB:
+				if otherObj != obj:
+					matchByNAME = [(index, string)for index, string in enumerate(otherObj.values) if regex.search(obj.name, string)]
+					if verbose and len(matchByNAME) > 0:
+						print(obj.name)
+						print(obj.path)
+						print('name found in ' + otherObj.path)
+						print(matchByNAME)
+						# print([match[0] for match in matchByNAME])
+						# print(otherObj.format.columns)
+						# print([otherObj.format.columns[index].ATT for index in [match[1] for match in matchByNAME]])
+				if otherObj != obj:
+					matchByONB = [(index, string)for index, string in enumerate(otherObj.values) if regex.search(obj.onb, string)]
+					if verbose and len(matchByONB) > 0:
+						print(obj.onb)
+						print(obj.path)
+						print('onb found in ' + otherObj.path)
+						print(matchByONB)
+						# print([otherObj.format.columns[index].ATT for index in [match[0] for match in matchByONB]])
+				if len(matchByONB) > 0 or len(matchByNAME) > 0:
+					callers.append(otherObj)
+
+def dumpCallers():
+    onbs = list(objectLsp.instances.keys())
+    data = {'ONB': onbs,
+    'NAME': [objectLsp.instances[x].name.decode('utf-8') for x in onbs],
+    'CLASS': [objectLsp.instances[x].objectType.name for x in onbs],
+    # 'CALLERS': [','.join([str(y.onb) for y in objectLsp.instances[x].callers]) for x in onbs],
+    '#CALLERS': [str(len(objectLsp.instances[x].callers)) for x in onbs]}
+    df = pd.DataFrame(data)
+    df.to_csv('callers.csv', sep = ';')
+    print('\ncallers.csv exported')
+
+	
 def main():
 	signal.signal(signal.SIGINT, signal_handler)
 	parser = argparse.ArgumentParser()
@@ -195,6 +263,11 @@ def main():
 		processObjectsWithoutFiles(otherPath)
 	if args.browse:
 		browseObject()
+	i = 0
+	for obj in list(PlwObject.instances.values()):
+		i += 1
+		print('searching dependencies ' + str(i) + '/' + str(len(list(PlwObject.instances.values()))) + ' ' + obj.format.name.decode('utf-8') + '                                                  ', end = '\r')
+		searchDependancies(obj, False)
 
 main_directory = 'DPM_OUT'
 files_subdirectory = 'FILES'
