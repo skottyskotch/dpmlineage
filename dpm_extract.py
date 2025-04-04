@@ -273,6 +273,7 @@ class PlwFormat:
 		self.path 			= ''
 		self.keyID 			= format_keyID
 		self.txt 			= one_format_text
+		self.rawData		= b''
 		self.objects 		= []
 		
 	def	print_format(self):
@@ -346,11 +347,15 @@ def Process_classes(dpm_text_bin):
 		cls = Dpm_objects_metaclass(my_format.table_def.decode('utf-8'), (DpmHeader,), class_methods, my_format)
 	print(str(len(PlwFormat.instances)) + ' format(s) instanciated')
 
-def Process_objects(dpm_text_str,out_dir):
-	i = 0
-	# This function parses the last part of the dpm to find environment objects described by blocks
-	# Generates a python class per object type found and instances a python object of this class for each environment object found (=line, most of the time)
+def processExclusions():
+	for tableDef in PlwFormat.instances.values():
+		print(tableDef.txt)
+		break
+	classList = sorted(PlwFormat.instances.values(), key=lambda o: len(o.objects))
+	dictTableDef = listChooser('Class','Select classes to exclude',[(str(len(x.objects)).ljust(8) + x.keyID.decode('utf-8').ljust(20) + x.name.decode('utf-8'),x) for x in PlwFormat.instances.values()])
 	
+def extractDataForFormat(dpm_text_str,out_dir):
+	# This function parses the last part of the dpm to find environment objects described by blocks and connect this to the tableDef object
 	# Isolate all the objects, from the first class to the last (at the very bottom)
 	regexp = regex.compile(b':END-OF-FORMAT\n(.*)',regex.DOTALL)
 	all_objects_text = regexp.findall(dpm_text_str)[0]
@@ -359,8 +364,7 @@ def Process_objects(dpm_text_str,out_dir):
 	class_object_text = regex.split(regexp,all_objects_text)
 	class_object_text.pop();
 	# for each class we separate the 1st line (name of the class) from the rest (data)
-	# and we push in a dict: b'Name of the class' => block text of the objects
-	class_objects_dict = dict()
+	# and we push it into the rawData attribute of the PlwFormat object
 	with Progress() as progress:
 		main_task = progress.add_task("[red]Split the data...", total = len(class_object_text))
 		for each in class_object_text:
@@ -373,12 +377,17 @@ def Process_objects(dpm_text_str,out_dir):
 			# split the lines
 			lines_objects = regex.findall(regexp,each)
 			lines_objects.pop(0)
-			class_objects_dict[plwFormatName] = lines_objects
+			PlwFormat.instances[plwFormatName.decode('utf-8')].rawData = lines_objects
 
-		# instanciation of the objects
+def Process_objects(dpm_text_str,out_dir):
+	# This function parses the last part of the dpm to find environment objects described by blocks
+	# Generates a python class per object type found and instances a python object of this class for each environment object found (=line, most of the time)
+	# instanciation of the objects
+	i = 0
 	with Progress() as progress:
 		main_task = progress.add_task("[cyan]Instanciating objects...", total = len(class_objects_dict))
 		sub_task = progress.add_task("[green]Class ...", total = 0)
+		for plwFormatName in class_objects_dict:
 		for plwFormatName in class_objects_dict:
 			progress.update(sub_task, total=len(class_objects_dict[plwFormatName]), completed=0)
 			for dpmLine in class_objects_dict[plwFormatName]:
@@ -594,13 +603,19 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("dpmFile", help="path/to/...dpm.gz")
 	parser.add_argument("-b", "--browse", action='store_true', help="Prompted for object visualisation")
+	parser.add_argument("-x", "--exclude", action='store_true', help="Prompted for selection of classes to exclude")
 	args = parser.parse_args()
+	
 	outputPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'output')
 	dpmText = b''
 	with gzip.open(args.dpmFile, 'rb') as dpmFile:
 		dpmText = dpmFile.read()
 	myHeader = DpmHeader(dpmText,'Dpm1')
 	Process_classes(dpmText)
+	extractDataForFormat(dpmText,outputPath)
+	if args.exclude:
+		processExclusions()
+	return
 	Process_objects(dpmText, outputPath)
 	# Dpm_objects_metaclass.listMetaclass()
 	if args.browse:

@@ -146,6 +146,10 @@ def processFormats(formatPath):
 				text = fin.read()
 				PlwFormat(text)
 
+def processExclusions():
+	classList = sorted(PlwFormat.instances.values(), key=lambda o: len(o.objects))
+	dictTableDef = listChooser('Class','Select classes to exclude',[(str(len(x.objects)).ljust(8) + x.keyID.decode('utf-8').ljust(20) + x.name.decode('utf-8'),x) for x in PlwFormat.instances.values()])
+	
 def processObjectsWithFiles(filesPath):
 	pathList = []
 	for dirFile in os.listdir(filesPath):
@@ -200,29 +204,35 @@ def searchDependancies(obj, verbose):
 	callers = []
 	matchByNAME = []
 	matchByONB = []
-	for plwFormat in PlwFormat.instances.values():
-		for otherObj in plwFormat.objects:
-			if obj.format.searchedByONB:
-				if otherObj != obj:
-					matchByNAME = [(index, string)for index, string in enumerate(otherObj.values) if regex.search(obj.name, string)]
-					if verbose and len(matchByNAME) > 0:
-						print(obj.name)
-						print(obj.path)
-						print('name found in ' + otherObj.path)
-						print(matchByNAME)
-						# print([match[0] for match in matchByNAME])
-						# print(otherObj.format.columns)
-						# print([otherObj.format.columns[index].ATT for index in [match[1] for match in matchByNAME]])
-				if otherObj != obj:
-					matchByONB = [(index, string)for index, string in enumerate(otherObj.values) if regex.search(obj.onb, string)]
-					if verbose and len(matchByONB) > 0:
-						print(obj.onb)
-						print(obj.path)
-						print('onb found in ' + otherObj.path)
-						print(matchByONB)
-						# print([otherObj.format.columns[index].ATT for index in [match[0] for match in matchByONB]])
-				if len(matchByONB) > 0 or len(matchByNAME) > 0:
-					callers.append(otherObj)
+	with Progress() as progress:
+		main_task = progress.add_task("[cyan]Object " + obj.id.decode('utf-8') + " ...", total = len(PlwObject.instances))
+		sub_task = progress.add_task("[green]Class ...", total = 0)
+		for plwFormat in PlwFormat.instances.values():
+			progress.update(sub_task, total=len(PlwFormat.instances.values()), completed=0)
+			for otherObj in plwFormat.objects:
+				if obj.format.searchedByONB:
+					if otherObj != obj:
+						matchByNAME = [(index, string)for index, string in enumerate(otherObj.values) if regex.search(obj.name, string)]
+						if verbose and len(matchByNAME) > 0:
+							print(obj.name)
+							print(obj.path)
+							print('name found in ' + otherObj.path)
+							print(matchByNAME)
+							# print([match[0] for match in matchByNAME])
+							# print(otherObj.format.columns)
+							# print([otherObj.format.columns[index].ATT for index in [match[1] for match in matchByNAME]])
+					if otherObj != obj:
+						matchByONB = [(index, string)for index, string in enumerate(otherObj.values) if regex.search(obj.onb, string)]
+						if verbose and len(matchByONB) > 0:
+							print(obj.onb)
+							print(obj.path)
+							print('onb found in ' + otherObj.path)
+							print(matchByONB)
+							# print([otherObj.format.columns[index].ATT for index in [match[0] for match in matchByONB]])
+					if len(matchByONB) > 0 or len(matchByNAME) > 0:
+						callers.append(otherObj)
+				progress.update(sub_task, description = "[green]Class " + plwFormat.table_def.decode('utf-8') + "...", advance=1)
+			progress.advance(main_task, 1)
 
 def dumpCallers():
     onbs = list(objectLsp.instances.keys())
@@ -241,6 +251,7 @@ def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("directory", help="path/to/.../DPM_OUT (created with dpm_extract.py)")
 	parser.add_argument("-b", "--browse", action='store_true', help="Prompted for object visualisation")
+	parser.add_argument("-x", "--exclude", action='store_true', help="Prompted for selection of classes to exclude")
 	args = parser.parse_args()
 	
 	inputPath = args.directory
@@ -259,6 +270,8 @@ def main():
 				otherPath = os.path.join(inputPath,files_subdirectory,objects_without_file_directory)
 				break
 		processFormats(formatPath)
+		if args.exclude:
+			processExclusions()
 		processObjectsWithFiles(filesPath)
 		processObjectsWithoutFiles(otherPath)
 	if args.browse:
