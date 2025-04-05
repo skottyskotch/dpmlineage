@@ -125,7 +125,8 @@ class PlwObject:
 		print('path: '					+ self.path)
 		print('id: '					+ self.id.decode('utf-8'))
 		print('attributes/values: ')
-		print(b'\n'.join([col.ATT.ljust(nMaxAttributeNameLength+1) + self.values[self.format.columns.index(col)] for col in self.format.columns]).decode('utf-8'))
+		for col in self.format.columns:
+			print(col.ATT.ljust(nMaxAttributeNameLength+1) + self.values[self.format.columns.index(col)])
 
 class ObjDependancy:
 	instances = []
@@ -138,7 +139,7 @@ class ObjDependancy:
 		ObjDependancy.instances.append(self)
 
 	def show(self):
-		print(self.called.path)
+		# print(self.called.path)
 		print(self.caller.path)
 	
 	@classmethod
@@ -155,7 +156,7 @@ def processFormats(formatPath):
 		if regex.match('^#%',fileFormat):
 			pathList.append(os.path.join(formatPath,fileFormat))
 	with Progress() as progress:
-		main_task = progress.add_task("[cyan]Processing table definition...", total = len(pathList))
+		main_task = progress.add_task("[cyan]Processing table definitions...", total = len(pathList))
 		for file in pathList:
 			progress.advance(main_task, 1)
 			with open (file, 'rb') as fin:
@@ -232,13 +233,64 @@ def checkboxChooser(sKey, sQuestion, lList):
     return answers
 
 def browseObject():
-	# dictTableDef = listChooser('Class','Browse a table definition',[(str(len(x.objects)).ljust(8) + x.keyID.decode('utf-8').ljust(20) + x.name.decode('utf-8'),x) for x in PlwFormat.instances.values()])
-	dictTableDef = listChooser('Class','Browse a table definition',[(str(len(x.objects)).ljust(8) + 'NAME:' + str(x.searchedByNAME).ljust(8) + ' ONB:' + str(x.searchedByONB).ljust(8) + x.name.decode('utf-8').ljust(20) ,x) for x in PlwFormat.instances.values()])
-	objectsList = sorted(dictTableDef['Class'].objects, key=lambda o: o.id)
-	dictObject = listChooser('Object','instances of ' + dictTableDef['Class'].table_def.decode('utf-8'), [(x.id.decode('utf-8'), x) for x in objectsList])
-	clear()
-	dictObject['Object'].show()
-	return dictObject['Object']
+	historyDisplayedList = []
+	historyCalled = []
+	down = True
+	searchable = True
+	while(True):
+		if len(historyDisplayedList) == 0:
+			# choice of the class
+			dictTableDef = listChooser('Class','Browse a table definition',[(str(len(x.objects)).ljust(8) + 'NAME:' + str(x.searchedByNAME).ljust(8) + ' ONB:' + str(x.searchedByONB).ljust(8) + x.name.decode('utf-8').ljust(20) ,x) for x in PlwFormat.instances.values()])
+			objectsList = sorted(dictTableDef['Class'].objects, key=lambda o: o.id)
+			prompt = 'instances of ' + dictTableDef['Class'].table_def.decode('utf-8')
+			historyDisplayedList.append((objectsList, prompt))
+		# choice of the object
+		if down:
+			dictObject = listChooser('Object', historyDisplayedList[-1][1] , [(x.id.decode('utf-8'), x) for x in historyDisplayedList[-1][0]])
+			historyCalled.append(dictObject['Object'])
+		# show
+		clear()
+		historyCalled[-1].show()
+		print('\n')
+		if searchable == False:
+			print('No callers found for ' + id)
+		# possible actions list
+		choices = []
+		if len(historyDisplayedList) > 1:
+			choices.append(('Back to called', 1))
+		if searchable:
+			choices.append(('Search callers', 2))
+		choices.append(('Browse another object', 3))
+		choices.append(('Exit', 4))
+		selection = listChooser('Action','Next action',choices)
+		# choose the next action
+		searchable = True
+		if selection['Action'] == 1: # back to called
+			down = False
+			historyDisplayedList.pop()
+			historyCalled.pop()
+		elif selection['Action'] == 2: # callers
+			down = True
+			deps = searchDependanciesForOne(historyCalled[-1])
+			callers = [dep.caller for dep in deps]
+			id = ''
+			if historyCalled[-1].name == b'':
+				id = historyCalled[-1].onb.decode('utf-8')
+			else:
+				id = historyCalled[-1].name.decode('utf-8')
+			historyDisplayedList.append((callers, 'Callers of ' + id))
+			if deps == []:
+				historyDisplayedList.pop()
+				down = False
+				searchable = False
+		elif selection['Action'] == 3:
+			down = True
+			historyDisplayedList = []
+			clear()
+		elif selection['Action'] == 4:
+			clear()
+			ObjDependancy.showAll()
+			sys.exit(0)
 
 def clear():
     if os.name == 'nt': # for windows
@@ -266,6 +318,7 @@ def searchDependanciesForOne(obj):
 			progress.advance(main_task, 1)
 	for dep in deps:
 		dep.show()
+	return deps
 
 def searchDependancies():
 	with Progress() as progress:
@@ -329,21 +382,7 @@ def main():
 	processObjectsWithFiles(filesPath)
 	processObjectsWithoutFiles(otherPath)
 	if args.browse:
-		bContinue = True
-		report = []
-		while bContinue:
-			obj = browseObject()
-			print('\n')
-			choices = [('Search callers of this object', 1), ('Browse another object', 2), ('Exit', 3)]
-			selection = listChooser('Action','Next action',choices)
-			if selection['Action'] == 3:
-				sys.exit(0)
-			elif selection['Action'] == 1:
-				searchDependanciesForOne(obj)
-			else:
-				# clear()
-				pass
-			ObjDependancy.showAll()
+		browseObject()
 	searchDependancies()
 
 main_directory = 'DPM_OUT'
