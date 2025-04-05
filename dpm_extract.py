@@ -305,7 +305,6 @@ class Dpm_objects_metaclass(type):
 		cls_obj.keyID = PlwFormat.instances[cls_obj.name].keyID
 		cls_obj.other_indexes = PlwFormat.instances[cls_obj.name].other_indexes
 
-		
 ######################################
 #	functions
 def Process_classes(dpm_text_bin):
@@ -348,12 +347,11 @@ def Process_classes(dpm_text_bin):
 	print(str(len(PlwFormat.instances)) + ' format(s) instanciated')
 
 def processExclusions():
-	for tableDef in PlwFormat.instances.values():
-		print(tableDef.txt)
-		break
-	classList = sorted(PlwFormat.instances.values(), key=lambda o: len(o.objects))
-	dictTableDef = listChooser('Class','Select classes to exclude',[(str(len(x.objects)).ljust(8) + x.keyID.decode('utf-8').ljust(20) + x.name.decode('utf-8'),x) for x in PlwFormat.instances.values()])
-	
+	classList = sorted(PlwFormat.instances.values(), key=lambda o: len(o.rawData), reverse=True)
+	dictTableDef = checkboxChooser('Class','Select classes to exclude',[(str(len(x.rawData)).ljust(8) + x.keyID.decode('utf-8').ljust(20) + x.name.decode('utf-8'),x) for x in classList])
+	for plwFormat in dictTableDef['Class']:
+		del PlwFormat.instances[plwFormat.table_def.decode('utf-8')]
+
 def extractDataForFormat(dpm_text_str,out_dir):
 	# This function parses the last part of the dpm to find environment objects described by blocks and connect this to the tableDef object
 	# Isolate all the objects, from the first class to the last (at the very bottom)
@@ -385,17 +383,15 @@ def Process_objects(dpm_text_str,out_dir):
 	# instanciation of the objects
 	i = 0
 	with Progress() as progress:
-		main_task = progress.add_task("[cyan]Instanciating objects...", total = len(class_objects_dict))
+		main_task = progress.add_task("[cyan]Instanciating objects...", total = len(PlwFormat.instances))
 		sub_task = progress.add_task("[green]Class ...", total = 0)
-		for plwFormatName in class_objects_dict:
-		for plwFormatName in class_objects_dict:
-			progress.update(sub_task, total=len(class_objects_dict[plwFormatName]), completed=0)
-			for dpmLine in class_objects_dict[plwFormatName]:
-				my_format = PlwFormat.instances[plwFormatName.decode('utf-8')] # search the format, describing the class
-				my_class = Dpm_objects_metaclass.instances[plwFormatName.decode('utf-8')] # search the class, describing the object
-				my_obj = my_class(plwFormatName, my_format.columns, dpmLine, my_class) # instanciate the object
+		for my_format in PlwFormat.instances.values():
+			progress.update(sub_task, total=len(my_format.objects), completed=0)
+			for dpmLine in my_format.rawData: # for each format, describing the class
+				my_class = Dpm_objects_metaclass.instances[my_format.table_def.decode('utf-8')] # search the class, describing the object
+				my_obj = my_class(my_format.table_def, my_format.columns, dpmLine, my_class) # instanciate the object on this class
 				i+=1
-				# Python object for planisware objects is created!
+				# a Python object for a planisware object is created!
 				my_format.objects.append(my_obj)
 				# completion of attributes PlwFile, directory and path of each object
 				# some object without dataset
@@ -411,9 +407,8 @@ def Process_objects(dpm_text_str,out_dir):
 					my_obj.PlwFile = ''
 					my_obj.path = os.path.join(out_dir, main_directory, files_subdirectory, objects_without_file_directory, my_format.dirname, my_obj.filename)
 					my_obj.directory = os.path.join(out_dir, main_directory, files_subdirectory, objects_without_file_directory, my_format.dirname)
-				progress.update(sub_task, description = "[green]Class " + plwFormatName.decode('utf-8') + "...", advance=1)
+				progress.update(sub_task, description = "[green]Class " + my_format.table_def.decode('utf-8') + "...", advance=1)
 			progress.advance(main_task, 1)
-			
 	print(str(i) + ' object(s) instanciated')
 	
 def Create_directory_structure (output_path, dpm):
@@ -585,7 +580,10 @@ def browseObject():
 		dictObject = listChooser('Object','instances of ' + dictTableDef['Class'].name, [(obj.id.decode('utf-8'), obj) for obj in objectsList])
 		dictObject['Object'].show()
 		print('\n')
-		input('<Enter> for another one.')
+		choices = [('Another object', 1), ('Exit', 2)]
+		selection = listChooser('Action','Next action',choices)
+		if selection['Action'] == 2:
+			sys.exit(0)
 		clear()
 
 def clear():
@@ -615,7 +613,6 @@ def main():
 	extractDataForFormat(dpmText,outputPath)
 	if args.exclude:
 		processExclusions()
-	return
 	Process_objects(dpmText, outputPath)
 	# Dpm_objects_metaclass.listMetaclass()
 	if args.browse:
