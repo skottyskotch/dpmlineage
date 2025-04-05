@@ -137,7 +137,7 @@ class ObjDependancy:
 		self.calledByOnb = calledByOnb # False = called by the name
 		ObjDependancy.instances.append(self)
 
-	def showThis(self):
+	def show(self):
 		print(self.called.path)
 		print(self.caller.path)
 	
@@ -265,7 +265,7 @@ def searchDependanciesForOne(obj):
 				progress.update(sub_task, description = "[green]Class " + plwFormat.table_def.decode('utf-8') + "...", advance=1)
 			progress.advance(main_task, 1)
 	for dep in deps:
-		dep.showThis()
+		dep.show()
 
 def searchDependancies():
 	with Progress() as progress:
