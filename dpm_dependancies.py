@@ -99,7 +99,7 @@ class PlwObject:
 		self.values = []
 		self.id = b'NIL'
 		self.name = b''
-		self.onb = ''
+		self.onb = b''
 		tableDefColumns = self.format.columns
 		for line in regex.split(b'\n',text)[1:]:
 			self.values.append(regex.split(b'\t',line)[1])
@@ -132,19 +132,49 @@ class ObjDependancy:
 	instances = []
 	def __init__(self, obj1, obj2, col, calledByOnb):
 		# obj1 is called by obj2
-		self.called = obj1
-		self.caller = obj2
-		self.callerColumn = col
-		self.calledByOnb = calledByOnb # False = called by the name
+		self.left = obj1
+		self.right = obj2
+		self.columnIndex = col
+		self.calledByOnb = calledByOnb # False = left by the name
 		ObjDependancy.instances.append(self)
 
 	def show(self):
-		# print(self.called.path)
-		print(self.caller.path)
-	
+		# print(self.left.path)
+		print(self.right.path)
+		if self.calledByOnb:
+			print('\tONB referenced in ' + self.right.format.columns[self.columnIndex].ATT.decode('utf-8'))
+		else:
+			print('\tNAME referenced in ' + self.right.format.columns[self.columnIndex].ATT.decode('utf-8'))
+
 	@classmethod
 	def showAll(cls):
-		print(len(cls.instances))
+		print(str(len(cls.instances)) + ' dependancies found')
+		print('\t'.join(['id_left','onb_left','name_left', 'type_left', 'id_right','onb_right','name_right', 'type_righ', 'column_right','byName','byOnb']))
+		msg = []
+		for dep in cls.instances:
+			line = []
+			line.append(dep.left.id.decode('utf-8'))
+			line.append(dep.left.onb.decode('utf-8'))
+			line.append(dep.left.name.decode('utf-8'))
+			line.append(dep.left.format.table_def.decode('utf-8'))
+			line.append(dep.right.id.decode('utf-8'))
+			line.append(dep.right.onb.decode('utf-8'))
+			line.append(dep.right.name.decode('utf-8'))
+			line.append(dep.right.format.table_def.decode('utf-8'))
+			line.append(dep.right.format.columns[dep.columnIndex].ATT.decode('utf-8'))
+			line.append(str(not(dep.calledByOnb)))
+			line.append(str(dep.calledByOnb))
+			sline = '\t'.join(line)
+			msg.append(sline)
+		print('\n'.join(msg))
+		
+	@classmethod
+	def findDeps(obj1, obj2):
+		deps = []
+		for dep in cls.instances:
+			if dep.left == obj1 and dep.right == obj2:
+				deps.append(dep)
+		return deps
 
 def signal_handler(sig, frame):
     print('Thanks')
@@ -195,7 +225,7 @@ def processObjectsWithFiles(filesPath):
 					for fileObject in os.listdir(os.path.join(dirType,filesPath,dirFile,dirType)):
 						pathList.append(os.path.join(dirType,filesPath,dirFile,dirType,fileObject))
 	with Progress() as progress:
-		main_task = progress.add_task("[cyan]Processing objects with files...", total = len(pathList))
+		main_task = progress.add_task("[cyan]Processing objects with dataset...", total = len(pathList))
 		for file in pathList:
 			progress.advance(main_task, 1)
 			PlwObject(file)
@@ -207,7 +237,7 @@ def processObjectsWithoutFiles(otherPath):
 			for fileObject in os.listdir(os.path.join(otherPath,dirOtherType)):
 				pathList.append(os.path.join(otherPath,dirOtherType,fileObject))
 	with Progress() as progress:
-		main_task = progress.add_task("[cyan]Processing objects without files...", total = len(pathList))
+		main_task = progress.add_task("[cyan]Processing objects without dataset...", total = len(pathList))
 		for file in pathList:
 			progress.advance(main_task, 1)
 			PlwObject(file)
@@ -233,31 +263,32 @@ def checkboxChooser(sKey, sQuestion, lList):
     return answers
 
 def browseObject():
-	historyDisplayedList = []
+	displayedListHistory = []
 	historyCalled = []
 	down = True
 	searchable = True
 	while(True):
-		if len(historyDisplayedList) == 0:
+		if len(displayedListHistory) == 0:
 			# choice of the class
 			dictTableDef = listChooser('Class','Browse a table definition',[(str(len(x.objects)).ljust(8) + 'NAME:' + str(x.searchedByNAME).ljust(8) + ' ONB:' + str(x.searchedByONB).ljust(8) + x.name.decode('utf-8').ljust(20) ,x) for x in PlwFormat.instances.values()])
 			objectsList = sorted(dictTableDef['Class'].objects, key=lambda o: o.id)
 			prompt = 'instances of ' + dictTableDef['Class'].table_def.decode('utf-8')
-			historyDisplayedList.append((objectsList, prompt))
+			displayedListHistory.append((objectsList, prompt))
 		# choice of the object
 		if down:
-			dictObject = listChooser('Object', historyDisplayedList[-1][1] , [(x.id.decode('utf-8'), x) for x in historyDisplayedList[-1][0]])
+			dictObject = listChooser('Object', displayedListHistory[-1][1] , [(x.id.decode('utf-8').ljust(20) + x.format.table_def.decode('utf-8'), x) for x in displayedListHistory[-1][0]])
 			historyCalled.append(dictObject['Object'])
 		# show
 		clear()
 		historyCalled[-1].show()
 		print('\n')
 		if searchable == False:
-			print('No callers found for ' + id)
+			print('No callers found for ' + historyCalled[-1].id.decode('utf-8'))
 		# possible actions list
 		choices = []
-		if len(historyDisplayedList) > 1:
-			choices.append(('Back to called', 1))
+		if len(displayedListHistory) > 1:
+			choices.append(('Back to called ' + historyCalled[-1].format.table_def.decode('utf-8') + ' ' + historyCalled[-1].id.decode('utf-8'), 1))
+			
 		if searchable:
 			choices.append(('Search callers', 2))
 		choices.append(('Browse another object', 3))
@@ -267,25 +298,20 @@ def browseObject():
 		searchable = True
 		if selection['Action'] == 1: # back to called
 			down = False
-			historyDisplayedList.pop()
+			displayedListHistory.pop()
 			historyCalled.pop()
 		elif selection['Action'] == 2: # callers
 			down = True
 			deps = searchDependanciesForOne(historyCalled[-1])
-			callers = [dep.caller for dep in deps]
-			id = ''
-			if historyCalled[-1].name == b'':
-				id = historyCalled[-1].onb.decode('utf-8')
-			else:
-				id = historyCalled[-1].name.decode('utf-8')
-			historyDisplayedList.append((callers, 'Callers of ' + id))
+			callers = [dep.right for dep in deps]
+			displayedListHistory.append((callers, 'Callers of ' + historyCalled[-1].id.decode('utf-8')))
 			if deps == []:
-				historyDisplayedList.pop()
+				displayedListHistory.pop()
 				down = False
 				searchable = False
 		elif selection['Action'] == 3:
 			down = True
-			historyDisplayedList = []
+			displayedListHistory = []
 			clear()
 		elif selection['Action'] == 4:
 			clear()
@@ -341,16 +367,36 @@ def searchDependancies():
 				progress.update(sub_task1, description = "[cyan]Object " + obj.id.decode('utf-8') + " ...", advance=1)
 			progress.advance(main_task, 1)
 
-def dumpCallers():
-    onbs = list(objectLsp.instances.keys())
-    data = {'ONB': onbs,
-    'NAME': [objectLsp.instances[x].name.decode('utf-8') for x in onbs],
-    'CLASS': [objectLsp.instances[x].objectType.name for x in onbs],
-    # 'CALLERS': [','.join([str(y.onb) for y in objectLsp.instances[x].callers]) for x in onbs],
-    '#CALLERS': [str(len(objectLsp.instances[x].callers)) for x in onbs]}
-    df = pd.DataFrame(data)
-    df.to_csv('callers.csv', sep = ';')
-    print('\ncallers.csv exported')
+def dumpLinks():
+	id_left = []
+	onb_left = []
+	name_left = []
+	type_left = []
+	id_right = []
+	onb_right = []
+	name_right = []
+	type_right = []
+	column_right = []
+	byName = []
+	byOnb = []
+	
+	for dep in ObjDependancy.instances:
+		id_left.append(dep.left.id.decode('utf-8'))
+		onb_left.append(dep.left.onb.decode('utf-8'))
+		name_left.append(dep.left.name.decode('utf-8'))
+		type_left.append(dep.left.format.table_def.decode('utf-8'))
+		id_right.append(dep.right.id.decode('utf-8'))
+		onb_right.append(dep.right.onb.decode('utf-8'))
+		name_right.append(dep.right.name.decode('utf-8'))
+		type_right.append(dep.right.format.table_def.decode('utf-8'))
+		column_right.append(dep.right.format.columns[dep.columnIndex].ATT.decode('utf-8'))
+		byName.append(str(not(dep.calledByOnb)))
+		byOnb.append(str(dep.calledByOnb))
+
+    data = {'id_left' = id_left, 'onb_left'= onb_left, 'name_left' = name_left,'type_left' = type_left,'id_right' = id_right,'onb_right' = onb_right,'name_right' = name_right,'type_right' = type_right,'column_right' = column_right,'byName' = byName,'byOnb' = byOnb}
+	df = pd.DataFrame(data)
+	df.to_csv('callers.csv', sep = ';')
+	print('\ncallers.csv exported')
 	
 def main():
 	signal.signal(signal.SIGINT, signal_handler)
@@ -384,6 +430,7 @@ def main():
 	if args.browse:
 		browseObject()
 	searchDependancies()
+	dumpLinks()
 
 main_directory = 'DPM_OUT'
 files_subdirectory = 'FILES'
