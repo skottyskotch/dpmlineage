@@ -137,10 +137,14 @@ class ObjDependancy:
 		self.calledByOnb = calledByOnb # False = called by the name
 		ObjDependancy.instances.append(self)
 
-	def show(self):
+	def showThis(self):
 		print(self.called.path)
 		print(self.caller.path)
-		
+	
+	@classmethod
+	def showAll(cls):
+		print(len(cls.instances))
+
 def signal_handler(sig, frame):
     print('Thanks')
     sys.exit(0)
@@ -261,7 +265,7 @@ def searchDependanciesForOne(obj):
 				progress.update(sub_task, description = "[green]Class " + plwFormat.table_def.decode('utf-8') + "...", advance=1)
 			progress.advance(main_task, 1)
 	for dep in deps:
-		dep.show()
+		dep.showThis()
 
 def searchDependancies():
 	with Progress() as progress:
@@ -308,22 +312,22 @@ def main():
 	filesPath = ''
 	if os.path.isdir(inputPath) and os.path.basename(inputPath) != main_directory:
 		print(args.directory + ' is not a base directory of an extracted dpm (.../' + main_directory + ')')
-	else:
-		formatPath = ''
-		filesPath = ''
-		otherPath = ''
-		for root, dirs, files in os.walk(inputPath):
-			if format_subdirectory in dirs and files_subdirectory in dirs:
-				formatPath = os.path.join(inputPath,format_subdirectory)
-				filesPath = os.path.join(inputPath,files_subdirectory)
-				otherPath = os.path.join(inputPath,files_subdirectory,objects_without_file_directory)
-				break
-		processFormats(formatPath)
-		if args.exclude:
-			mapDirectories(filesPath, otherPath)
-			processExclusions()
-		processObjectsWithFiles(filesPath)
-		processObjectsWithoutFiles(otherPath)
+		return
+	formatPath = ''
+	filesPath = ''
+	otherPath = ''
+	for root, dirs, files in os.walk(inputPath):
+		if format_subdirectory in dirs and files_subdirectory in dirs:
+			formatPath = os.path.join(inputPath,format_subdirectory)
+			filesPath = os.path.join(inputPath,files_subdirectory)
+			otherPath = os.path.join(inputPath,files_subdirectory,objects_without_file_directory)
+			break
+	processFormats(formatPath)
+	if args.exclude:
+		mapDirectories(filesPath, otherPath)
+		processExclusions()
+	processObjectsWithFiles(filesPath)
+	processObjectsWithoutFiles(otherPath)
 	if args.browse:
 		bContinue = True
 		report = []
@@ -339,9 +343,9 @@ def main():
 			else:
 				# clear()
 				pass
+			ObjDependancy.showAll()
 	searchDependancies()
 
-	
 main_directory = 'DPM_OUT'
 files_subdirectory = 'FILES'
 data_subdirectory = 'DATA'
