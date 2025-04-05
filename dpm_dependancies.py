@@ -393,7 +393,7 @@ def dumpLinks():
 		byName.append(str(not(dep.calledByOnb)))
 		byOnb.append(str(dep.calledByOnb))
 
-    data = {'id_left' = id_left, 'onb_left'= onb_left, 'name_left' = name_left,'type_left' = type_left,'id_right' = id_right,'onb_right' = onb_right,'name_right' = name_right,'type_right' = type_right,'column_right' = column_right,'byName' = byName,'byOnb' = byOnb}
+	data = {'id_left' : id_left, 'onb_left': onb_left, 'name_left' : name_left,'type_left' : type_left,'id_right' : id_right,'onb_right' : onb_right,'name_right' : name_right,'type_right' : type_right,'column_right' : column_right,'byName' : byName,'byOnb' : byOnb}
 	df = pd.DataFrame(data)
 	df.to_csv('callers.csv', sep = ';')
 	print('\ncallers.csv exported')
