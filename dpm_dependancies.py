@@ -242,10 +242,7 @@ def clear():
     else: # for mac and linux(here, os.name is 'posix')
         _ = os.system('clear')
 
-def searchDependancies(obj, verbose):
-	callers = []
-	matchByONB = []
-	matchByNAME = []
+def searchDependanciesForOne(obj):
 	deps = []
 	with Progress() as progress:
 		main_task = progress.add_task("[cyan]Object " + obj.id.decode('utf-8') + " ...", total = len(PlwFormat.instances))
@@ -263,9 +260,29 @@ def searchDependancies(obj, verbose):
 								deps.append(ObjDependancy(obj, otherObj, index, False))
 				progress.update(sub_task, description = "[green]Class " + plwFormat.table_def.decode('utf-8') + "...", advance=1)
 			progress.advance(main_task, 1)
-	if verbose:
-		for dep in deps:
-			dep.show()
+	for dep in deps:
+		dep.show()
+
+def searchDependancies():
+	with Progress() as progress:
+		main_task = progress.add_task("[red]Objects...", total = len(PlwObject.instances))
+		sub_task1 = progress.add_task("[cyan]Object ...", total = 0)
+		sub_task2 = progress.add_task("[green]Class ...", total = 0)
+		for obj in list(PlwObject.instances.values()):
+			for plwFormat in PlwFormat.instances.values():
+				progress.update(sub_task2, total=len(PlwFormat.instances.values()), completed=0)
+				for otherObj in plwFormat.objects:
+					if otherObj != obj:
+						for index, string in enumerate(otherObj.values):
+							if obj.format.searchedByONB:
+								if obj.onb in string:
+									ObjDependancy(obj, otherObj, index, True)
+							if obj.format.searchedByNAME:
+								if obj.name in string:
+									ObjDependancy(obj, otherObj, index, False)
+					progress.update(sub_task2, description = "[green]Class " + plwFormat.table_def.decode('utf-8') + "...", advance=1)
+				progress.update(sub_task1, description = "[cyan]Object " + obj.id.decode('utf-8') + " ...", advance=1)
+			progress.advance(main_task, 1)
 
 def dumpCallers():
     onbs = list(objectLsp.instances.keys())
@@ -318,16 +335,13 @@ def main():
 			if selection['Action'] == 3:
 				sys.exit(0)
 			elif selection['Action'] == 1:
-				searchDependancies(obj, True)
+				searchDependanciesForOne(obj)
 			else:
 				# clear()
 				pass
-	i = 0
-	for obj in list(PlwObject.instances.values()):
-		i += 1
-		print('searching dependencies ' + str(i) + '/' + str(len(list(PlwObject.instances.values()))) + ' ' + obj.format.name.decode('utf-8') + '                                                  ', end = '\r')
-		searchDependancies(obj, False)
+	searchDependancies()
 
+	
 main_directory = 'DPM_OUT'
 files_subdirectory = 'FILES'
 data_subdirectory = 'DATA'
