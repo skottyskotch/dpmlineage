@@ -129,8 +129,14 @@ class PlwFile:
 		self.users = file_users
 		self.txt = plwfile_txt_str
 		self.directory = file_directory.decode('utf-8')
+		self.nb_objects = 0
 		
 		PlwFile.instances[self.onb] = self
+		
+	def countObj(self):
+		for plwFormat in PlwFormat.instances.values():
+			if plwFormat.hasDataset:
+				self.nb_objects += b'\t'.join(plwFormat.rawData).count(self.onb)
 			
 class DpmHeader:
 	header_txt = ''
@@ -262,11 +268,10 @@ class PlwFormat:
 		PlwFormat.instances[format_table_def.decode('utf-8')] = self
 
 		format_dirname = regex.sub(rb'[:\?\*<>\|]',b'_',format_table_def)
-		
+
 		self.table_def 		= format_table_def
 		self.name 			= format_name
 		self.columns 		= format_columns_fields
-		self.nb_columns 	= len(self.columns)
 		self.table_index 	= format_table_index
 		self.other_indexes 	= format_other_indexes
 		self.dirname 		= format_dirname.decode('utf-8')
@@ -274,6 +279,7 @@ class PlwFormat:
 		self.keyID 			= format_keyID
 		self.txt 			= one_format_text
 		self.rawData		= b''
+		self.hasDataset		= b':DATASET' in [col.ATT for col in self.columns]
 		self.objects 		= []
 		
 	def	print_format(self):
@@ -347,10 +353,18 @@ def Process_classes(dpm_text_bin):
 	print(str(len(PlwFormat.instances)) + ' format(s) instanciated')
 
 def processExclusions():
+	# Exclude types
 	classList = sorted(PlwFormat.instances.values(), key=lambda o: len(o.rawData), reverse=True)
 	dictTableDef = checkboxChooser('Class','Select classes to exclude',[(str(len(x.rawData)).ljust(8) + x.keyID.decode('utf-8').ljust(20) + x.name.decode('utf-8'),x) for x in classList])
 	for plwFormat in dictTableDef['Class']:
 		del PlwFormat.instances[plwFormat.table_def.decode('utf-8')]
+	# Exclude files
+	# for plwFile in PlwFile.instances.values():
+		# plwFile.countObj()
+	# plwFilelist = sorted(PlwFile.instances.values(), key=lambda o: o.nb_objects, reverse = True)
+	# dictFile = checkboxChooser('File','Select File to exclude',[(str(x.nb_objects).ljust(8) + x.onb.decode('utf-8').ljust(20) + x.index.decode('utf-8'),x) for x in plwFilelist])
+	# for plwFile in dictFile['File']:
+		# del PlwFile.instances[plwFile.onb]
 
 def extractDataForFormat(dpm_text_str,out_dir):
 	# This function parses the last part of the dpm to find environment objects described by blocks and connect this to the tableDef object
@@ -611,6 +625,7 @@ def main():
 	myHeader = DpmHeader(dpmText,'Dpm1')
 	Process_classes(dpmText)
 	extractDataForFormat(dpmText,outputPath)
+	print('whiere')
 	if args.exclude:
 		processExclusions()
 	Process_objects(dpmText, outputPath)

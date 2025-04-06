@@ -347,11 +347,13 @@ def searchDependanciesForOne(obj):
 	return deps
 
 def searchDependancies():
+	nMaxClassNameLength = max([len(x) for x in PlwFormat.instances.keys()])
 	with Progress() as progress:
-		main_task = progress.add_task("[red]Objects...", total = len(PlwObject.instances))
+		main_task = progress.add_task("[red]Objects searched...", total = len(PlwObject.instances))
 		sub_task1 = progress.add_task("[cyan]Object ...", total = 0)
 		sub_task2 = progress.add_task("[green]Class ...", total = 0)
-		for obj in list(PlwObject.instances.values()):
+		progress.update(sub_task1, total=len(PlwObject.instances.values()), completed=0)
+		for obj in PlwObject.instances.values():
 			for plwFormat in PlwFormat.instances.values():
 				progress.update(sub_task2, total=len(PlwFormat.instances.values()), completed=0)
 				for otherObj in plwFormat.objects:
@@ -363,8 +365,8 @@ def searchDependancies():
 							if obj.format.searchedByNAME:
 								if obj.name in string:
 									ObjDependancy(obj, otherObj, index, False)
-					progress.update(sub_task2, description = "[green]Class " + plwFormat.table_def.decode('utf-8') + "...", advance=1)
-				progress.update(sub_task1, description = "[cyan]Object " + obj.id.decode('utf-8') + " ...", advance=1)
+					progress.update(sub_task2, description = ("[green]Class " + plwFormat.table_def.decode('utf-8') + "...").ljust(nMaxClassNameLength+7), advance=1)
+				progress.update(sub_task1, description = ("[cyan]Object " + obj.id.decode('utf-8') + " ...").ljust(nMaxClassNameLength+7), advance=1)
 			progress.advance(main_task, 1)
 
 def dumpLinks():
@@ -409,7 +411,7 @@ def main():
 	inputPath = args.directory
 	formatPath = ''
 	filesPath = ''
-	if os.path.isdir(inputPath) and os.path.basename(inputPath) != main_directory:
+	if os.path.isdir(inputPath) and main_directory not in os.path.basename(inputPath):
 		print(args.directory + ' is not a base directory of an extracted dpm (.../' + main_directory + ')')
 		return
 	formatPath = ''
