@@ -2,11 +2,56 @@
 import os
 import regex
 import argparse
-import inquirer # pip install inquirer
-from rich.progress import Progress # pip install rich
-import signal
 import sys
+import signal
+import pandas as pd # pip install pandas
+import inquirer # pip install inquirer
+from rich.progress import Progress, TaskID # pip install rich
+from rich.console import Console
+from rich.table import Table
+from rich.live import Live
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import defaultdict
 
+main_directory = 'DPM_OUT'
+files_subdirectory = 'FILES'
+data_subdirectory = 'DATA'
+format_subdirectory = 'FORMAT'
+header_subdirectory = 'HEADER'
+objects_without_file_directory = '#OTHERS'
+
+### utils
+def signal_handler(sig, frame):
+    print('Thanks')
+    sys.exit(0)
+
+def listChooser(sKey, sQuestion, lList):
+    questions = [inquirer.List(
+        sKey,
+        message=sQuestion,
+        choices=lList,
+        carousel=True
+    )]
+    answers = inquirer.prompt(questions)  # returns a dict
+    return answers
+
+def checkboxChooser(sKey, sQuestion, lList):
+    questions = [inquirer.Checkbox(
+        sKey,
+        message=sQuestion,
+        choices=lList,
+        carousel=True
+    )]
+    answers = inquirer.prompt(questions)  # returns a dict
+    return answers
+
+def clear():
+    if os.name == 'nt': # for windows
+        _ = os.system('cls')
+    else: # for mac and linux(here, os.name is 'posix')
+        _ = os.system('clear')
+
+### classes
 class ColumnsDef:
 	def __init__(self, text):
 		regexp = regex.compile(b':ATT ([^ ]*)')
@@ -116,6 +161,9 @@ class PlwObject:
 			self.name = self.values[[col.ATT for col in self.format.columns].index(b':NAME')]
 		if self.format.searchedByONB:
 			self.onb = self.values[[col.ATT for col in self.format.columns].index(b':OBJECT-NUMBER')]
+        # Flatten the attributes to improve the search latter
+		self.attributes = {col: val for col, val in zip([c.ATT for c in self.format.columns], self.values)}
+		self.valuesConcat = b'|'.join(self.values)
 		PlwObject.instances[self.id] = self
 
 	def show(self):
@@ -134,7 +182,7 @@ class ObjDependancy:
 		# obj1 is called by obj2
 		self.left = obj1
 		self.right = obj2
-		self.columnIndex = col
+		self.column = col
 		self.calledByOnb = calledByOnb # False = left by the name
 		ObjDependancy.instances.append(self)
 
@@ -142,9 +190,9 @@ class ObjDependancy:
 		# print(self.left.path)
 		print(self.right.path)
 		if self.calledByOnb:
-			print('\tONB referenced in ' + self.right.format.columns[self.columnIndex].ATT.decode('utf-8'))
+			print('\tONB referenced in ' + self.column.decode('utf-8'))
 		else:
-			print('\tNAME referenced in ' + self.right.format.columns[self.columnIndex].ATT.decode('utf-8'))
+			print('\tNAME referenced in ' +  self.column.decode('utf-8'))
 
 	@classmethod
 	def showAll(cls):
@@ -161,7 +209,7 @@ class ObjDependancy:
 			line.append(dep.right.onb.decode('utf-8'))
 			line.append(dep.right.name.decode('utf-8'))
 			line.append(dep.right.format.table_def.decode('utf-8'))
-			line.append(dep.right.format.columns[dep.columnIndex].ATT.decode('utf-8'))
+			line.append(dep.column.decode('utf-8'))
 			line.append(str(not(dep.calledByOnb)))
 			line.append(str(dep.calledByOnb))
 			sline = '\t'.join(line)
@@ -175,10 +223,6 @@ class ObjDependancy:
 			if dep.left == obj1 and dep.right == obj2:
 				deps.append(dep)
 		return deps
-
-def signal_handler(sig, frame):
-    print('Thanks')
-    sys.exit(0)
 
 def processFormats(formatPath):
 	pathList = []
@@ -242,26 +286,6 @@ def processObjectsWithoutFiles(otherPath):
 			progress.advance(main_task, 1)
 			PlwObject(file)
 
-def listChooser(sKey, sQuestion, lList):
-    questions = [inquirer.List(
-        sKey,
-        message=sQuestion,
-        choices=lList,
-        carousel=True
-    )]
-    answers = inquirer.prompt(questions)  # returns a dict
-    return answers
-
-def checkboxChooser(sKey, sQuestion, lList):
-    questions = [inquirer.Checkbox(
-        sKey,
-        message=sQuestion,
-        choices=lList,
-        carousel=True
-    )]
-    answers = inquirer.prompt(questions)  # returns a dict
-    return answers
-
 def browseObject():
 	displayedListHistory = []
 	historyCalled = []
@@ -318,12 +342,7 @@ def browseObject():
 			ObjDependancy.showAll()
 			sys.exit(0)
 
-def clear():
-    if os.name == 'nt': # for windows
-        _ = os.system('cls')
-    else: # for mac and linux(here, os.name is 'posix')
-        _ = os.system('clear')
-
+######### search
 def searchDependanciesForOne(obj):
 	deps = []
 	with Progress() as progress:
@@ -346,30 +365,41 @@ def searchDependanciesForOne(obj):
 		dep.show()
 	return deps
 
-def searchDependancies():
+def indexDependancies(globalIndex):
 	nMaxClassNameLength = max([len(x) for x in PlwFormat.instances.keys()])
 	with Progress() as progress:
-		main_task = progress.add_task("[red]Objects searched...", total = len(PlwObject.instances))
-		sub_task1 = progress.add_task("[cyan]Object ...", total = 0)
-		sub_task2 = progress.add_task("[green]Class ...", total = 0)
-		progress.update(sub_task1, total=len(PlwObject.instances.values()), completed=0)
-		for obj in PlwObject.instances.values():
-			for plwFormat in PlwFormat.instances.values():
-				progress.update(sub_task2, total=len(PlwFormat.instances.values()), completed=0)
-				for otherObj in plwFormat.objects:
+		i = 0
+		main_task = progress.add_task("[cyan]Objects searched...", total = len(PlwObject.instances))
+		for plwFormat in PlwFormat.instances.values():
+			for obj in plwFormat.objects:
+				i+=1
+				for otherObj in PlwObject.instances.values():
 					if otherObj != obj:
-						for index, string in enumerate(otherObj.values):
-							if obj.format.searchedByONB:
-								if obj.onb in string:
-									ObjDependancy(obj, otherObj, index, True)
-							if obj.format.searchedByNAME:
-								if obj.name in string:
-									ObjDependancy(obj, otherObj, index, False)
-					progress.update(sub_task2, description = ("[green]Class " + plwFormat.table_def.decode('utf-8') + "...").ljust(nMaxClassNameLength+7), advance=1)
-				progress.update(sub_task1, description = ("[cyan]Object " + obj.id.decode('utf-8') + " ...").ljust(nMaxClassNameLength+7), advance=1)
+						if obj.format.searchedByONB and obj.onb in otherObj.valuesConcat:
+							globalIndex[obj.id].append(otherObj)
+						if obj.format.searchedByNAME and obj.name in otherObj.valuesConcat:
+							globalIndex[obj.id].append(otherObj)
+				progress.update(main_task, description = "[cyan]Object indexation " + str(i) + "/" + str(len(PlwObject.instances)) + ". Found " + str(len(globalIndex.keys())) + "...", advance = 1)
+			# break
+
+def processDepLinks(globalIndex):
+	with Progress() as progress:
+		main_task = progress.add_task("[cyan]Processing dependancy...", total = len(ObjDependancy.instances))
+		for objectId, callers in globalIndex.items():
+			obj = PlwObject.instances[objectId]
+			if obj.format.searchedByONB:
+				for caller in callers:
+					for attribute, value in caller.attributes.items():
+						if obj.onb in value:
+							ObjDependancy(obj, caller, attribute, True)
+			if obj.format.searchedByNAME:
+				for caller in callers:
+					for attribute, value in caller.attributes.items():
+						if obj.name in value:
+							ObjDependancy(obj, caller, attribute, False)
 			progress.advance(main_task, 1)
 
-def dumpLinks():
+def dumpLinks(outputPath):
 	id_left = []
 	onb_left = []
 	name_left = []
@@ -382,23 +412,26 @@ def dumpLinks():
 	byName = []
 	byOnb = []
 	
-	for dep in ObjDependancy.instances:
-		id_left.append(dep.left.id.decode('utf-8'))
-		onb_left.append(dep.left.onb.decode('utf-8'))
-		name_left.append(dep.left.name.decode('utf-8'))
-		type_left.append(dep.left.format.table_def.decode('utf-8'))
-		id_right.append(dep.right.id.decode('utf-8'))
-		onb_right.append(dep.right.onb.decode('utf-8'))
-		name_right.append(dep.right.name.decode('utf-8'))
-		type_right.append(dep.right.format.table_def.decode('utf-8'))
-		column_right.append(dep.right.format.columns[dep.columnIndex].ATT.decode('utf-8'))
-		byName.append(str(not(dep.calledByOnb)))
-		byOnb.append(str(dep.calledByOnb))
+	with Progress() as progress:
+		main_task = progress.add_task("[cyan]Preparing csv...", total = len(ObjDependancy.instances))
+		for dep in ObjDependancy.instances:
+			id_left.append(dep.left.id.decode('utf-8'))
+			onb_left.append(dep.left.onb.decode('utf-8'))
+			name_left.append(dep.left.name.decode('utf-8'))
+			type_left.append(dep.left.format.table_def.decode('utf-8'))
+			id_right.append(dep.right.id.decode('utf-8'))
+			onb_right.append(dep.right.onb.decode('utf-8'))
+			name_right.append(dep.right.name.decode('utf-8'))
+			type_right.append(dep.right.format.table_def.decode('utf-8'))
+			column_right.append(dep.column.decode('utf-8'))
+			byName.append(str(not(dep.calledByOnb)))
+			byOnb.append(str(dep.calledByOnb))
+			progress.advance(main_task, 1)
 
 	data = {'id_left' : id_left, 'onb_left': onb_left, 'name_left' : name_left,'type_left' : type_left,'id_right' : id_right,'onb_right' : onb_right,'name_right' : name_right,'type_right' : type_right,'column_right' : column_right,'byName' : byName,'byOnb' : byOnb}
 	df = pd.DataFrame(data)
-	df.to_csv('callers.csv', sep = ';')
-	print('\ncallers.csv exported')
+	df.to_csv(os.path.join(outputPath, main_directory + '_callers.csv'), sep = ';')
+	print('\n' + os.path.join(outputPath, main_directory + '_callers.csv') + ' exported')
 	
 def main():
 	signal.signal(signal.SIGINT, signal_handler)
@@ -411,9 +444,11 @@ def main():
 	inputPath = args.directory
 	formatPath = ''
 	filesPath = ''
+	global main_directory
 	if os.path.isdir(inputPath) and main_directory not in os.path.basename(inputPath):
 		print(args.directory + ' is not a base directory of an extracted dpm (.../' + main_directory + ')')
 		return
+	main_directory = os.path.basename(inputPath)
 	formatPath = ''
 	filesPath = ''
 	otherPath = ''
@@ -431,15 +466,49 @@ def main():
 	processObjectsWithoutFiles(otherPath)
 	if args.browse:
 		browseObject()
-	searchDependancies()
-	dumpLinks()
-
-main_directory = 'DPM_OUT'
-files_subdirectory = 'FILES'
-data_subdirectory = 'DATA'
-format_subdirectory = 'FORMAT'
-header_subdirectory = 'HEADER'
-objects_without_file_directory = '#OTHERS'
+	globalIndex = defaultdict(list)
+	indexDependancies(globalIndex)
+	# indexDependancies_()
+	# parallelIndexation()
+	processDepLinks(globalIndex)
+	outputPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'output')
+	dumpLinks(outputPath)
 
 if __name__ == '__main__':
     main()
+	
+# lab
+def indexDependancies_():
+	with Progress() as progress:
+		main_task = progress.add_task("[red]Objects indexation...", total = len(PlwObject.instances))
+		with ThreadPoolExecutor() as executor:
+			futures = [executor.submit(indexer_, obj) for obj in PlwObject.instances.values()]
+			# with Live(creer_table(executor), refresh_per_second=1) as live:
+			for future in as_completed(futures):
+				# live.update(creer_table(executor))
+				progress.update(main_task, description = "[cyan]Object indexation found " + str(len(globalIndex.keys())) + "...", advance = 100)
+
+def indexer_(obj):
+	i = 0
+	for plwFormat in PlwFormat.instances:
+		for otherObj in PlwObject.instances:
+			i+=1
+			if otherObj != obj:
+				# pass
+				if obj.format.searchedByONB and obj.onb in otherObj.valuesConcat:
+					globalIndex[obj.id].append(otherObj)
+				if obj.format.searchedByNAME and obj.name in otherObj.valuesConcat:
+					globalIndex[obj.id].append(otherObj)
+	return i
+
+def creer_table(executor):
+    table = Table(title="Progression des Tâches")
+    table.add_column("ID Tâche", justify="center", style="cyan")
+    table.add_column("État", justify="center", style="magenta")
+    table.add_column("Résultat", justify="center", style="green")
+    # Ajouter les tâches à la table
+    for i, future in enumerate(futures):
+        etat = "En attente" if not future.running() else "En cours"
+        resultat = "" if not future.done() else str(future.result())
+        table.add_row(str(i), etat, resultat)
+    return table
