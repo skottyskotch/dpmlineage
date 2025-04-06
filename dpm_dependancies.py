@@ -373,14 +373,17 @@ def indexDependancies(globalIndex):
 		for plwFormat in PlwFormat.instances.values():
 			for obj in plwFormat.objects:
 				i+=1
-				for otherObj in PlwObject.instances.values():
-					if otherObj != obj:
-						if obj.format.searchedByONB and obj.onb in otherObj.valuesConcat:
-							globalIndex[obj.id].append(otherObj)
-						if obj.format.searchedByNAME and obj.name in otherObj.valuesConcat:
-							globalIndex[obj.id].append(otherObj)
+				for otherPlwFormat in PlwFormat.instances.values():
+					# too much false positive with ATV. they all have the same name
+					if plwFormat.table_def == b'#%TEMP-TABLE:_ATV_PT_ATT_VAL:' and otherPlwFormat.table_def == b'#%TEMP-TABLE:_ATV_PT_ATT_VAL:':
+						continue
+					for otherObj in otherPlwFormat.objects:
+						if otherObj != obj:
+							if obj.format.searchedByONB and obj.onb in otherObj.valuesConcat:
+								globalIndex[obj.id].append(otherObj)
+							if obj.format.searchedByNAME and obj.name in otherObj.valuesConcat:
+								globalIndex[obj.id].append(otherObj)
 				progress.update(main_task, description = "[cyan]Object indexation " + str(i) + "/" + str(len(PlwObject.instances)) + ". Found " + str(len(globalIndex.keys())) + "...", advance = 1)
-			# break
 
 def processDepLinks(globalIndex):
 	with Progress() as progress:
