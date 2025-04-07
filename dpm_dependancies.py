@@ -237,22 +237,24 @@ def processFormats(formatPath):
 				text = fin.read()
 				PlwFormat(text,file)
 
-def mapDirectories(filepath, otherpath):
+def mapDirectories(filesPath, otherPath):
 	tableDefList = [x for x in PlwFormat.instances.keys()]
 	tableDefObjectsDirs = []
-	for root, dirs, files in os.walk(filepath):
-		for tableDefObjectDir in dirs:
-			for tableDefName in tableDefList:
-				if tableDefObjectDir == regex.sub(r'[:\?\*<>\|]','_', tableDefName):
-					PlwFormat.instances[tableDefName].objectPath = os.path.join(root,tableDefObjectDir)
-					PlwFormat.instances[tableDefName].nb_objects += len(os.listdir(os.path.join(root,tableDefObjectDir)))
-	for root, dirs, files in os.walk(otherpath):
-		for tableDefObjectDir in dirs:
-			for tableDefName in tableDefList:
-				if tableDefObjectDir == regex.sub(r'[:\?\*<>\|]','_', tableDefName):
-					tableDefObjectsDirs.append(os.path.join(root,tableDefObjectDir))
-					PlwFormat.instances[tableDefName].objectPath = os.path.join(root,tableDefObjectDir)
-					PlwFormat.instances[tableDefName].nb_objects += len(os.listdir(os.path.join(root,tableDefObjectDir)))
+	if os.path.isdir(filesPath):
+		for root, dirs, files in os.walk(filesPath):
+			for tableDefObjectDir in dirs:
+				for tableDefName in tableDefList:
+					if tableDefObjectDir == regex.sub(r'[:\?\*<>\|]','_', tableDefName):
+						PlwFormat.instances[tableDefName].objectPath = os.path.join(root,tableDefObjectDir)
+						PlwFormat.instances[tableDefName].nb_objects += len(os.listdir(os.path.join(root,tableDefObjectDir)))
+	if os.path.isdir(otherPath):
+		for root, dirs, files in os.walk(otherPath):
+			for tableDefObjectDir in dirs:
+				for tableDefName in tableDefList:
+					if tableDefObjectDir == regex.sub(r'[:\?\*<>\|]','_', tableDefName):
+						tableDefObjectsDirs.append(os.path.join(root,tableDefObjectDir))
+						PlwFormat.instances[tableDefName].objectPath = os.path.join(root,tableDefObjectDir)
+						PlwFormat.instances[tableDefName].nb_objects += len(os.listdir(os.path.join(root,tableDefObjectDir)))
 
 def processExclusions():
 	classList = sorted(PlwFormat.instances.values(), key=lambda o: o.nb_objects, reverse=True)
@@ -262,29 +264,31 @@ def processExclusions():
 
 def processObjectsWithFiles(filesPath):
 	pathList = []
-	for dirFile in os.listdir(filesPath):
-		if dirFile != objects_without_file_directory:
-			for dirType in os.listdir(os.path.join(filesPath,dirFile)):
-				if dirType in [regex.sub(r'[:\?\*<>\|]','_', x) for x in PlwFormat.instances.keys()]:
-					for fileObject in os.listdir(os.path.join(dirType,filesPath,dirFile,dirType)):
-						pathList.append(os.path.join(dirType,filesPath,dirFile,dirType,fileObject))
-	with Progress() as progress:
-		main_task = progress.add_task("[cyan]Processing objects with dataset...", total = len(pathList))
-		for file in pathList:
-			progress.advance(main_task, 1)
-			PlwObject(file)
+	if os.path.isdir(filesPath):
+		for dirFile in os.listdir(filesPath):
+			if dirFile != objects_without_file_directory:
+				for dirType in os.listdir(os.path.join(filesPath,dirFile)):
+					if dirType in [regex.sub(r'[:\?\*<>\|]','_', x) for x in PlwFormat.instances.keys()]:
+						for fileObject in os.listdir(os.path.join(dirType,filesPath,dirFile,dirType)):
+							pathList.append(os.path.join(dirType,filesPath,dirFile,dirType,fileObject))
+		with Progress() as progress:
+			main_task = progress.add_task("[cyan]Processing objects with dataset...", total = len(pathList))
+			for file in pathList:
+				progress.advance(main_task, 1)
+				PlwObject(file)
 
 def processObjectsWithoutFiles(otherPath):
 	pathList = []
-	for dirOtherType in os.listdir(otherPath):
-		if dirOtherType in [regex.sub(r'[:\?\*<>\|]','_', x) for x in PlwFormat.instances.keys()]:
-			for fileObject in os.listdir(os.path.join(otherPath,dirOtherType)):
-				pathList.append(os.path.join(otherPath,dirOtherType,fileObject))
-	with Progress() as progress:
-		main_task = progress.add_task("[cyan]Processing objects without dataset...", total = len(pathList))
-		for file in pathList:
-			progress.advance(main_task, 1)
-			PlwObject(file)
+	if os.path.isdir(otherPath):
+		for dirOtherType in os.listdir(otherPath):
+			if dirOtherType in [regex.sub(r'[:\?\*<>\|]','_', x) for x in PlwFormat.instances.keys()]:
+				for fileObject in os.listdir(os.path.join(otherPath,dirOtherType)):
+					pathList.append(os.path.join(otherPath,dirOtherType,fileObject))
+		with Progress() as progress:
+			main_task = progress.add_task("[cyan]Processing objects without dataset...", total = len(pathList))
+			for file in pathList:
+				progress.advance(main_task, 1)
+				PlwObject(file)
 
 def browseObject():
 	displayedListHistory = []
@@ -475,7 +479,10 @@ def main():
 	# parallelIndexation()
 	processDepLinks(globalIndex)
 	outputPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'output')
-	dumpLinks(outputPath)
+	if os.path.isdir(outputPath):
+		dumpLinks(outputPath)
+	else:
+		print(outputPath + ' not found')
 
 if __name__ == '__main__':
     main()
