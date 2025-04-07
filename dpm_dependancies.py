@@ -7,11 +7,13 @@ import signal
 import pandas as pd # pip install pandas
 import inquirer # pip install inquirer
 from rich.progress import Progress, TaskID # pip install rich
-from rich.console import Console
-from rich.table import Table
-from rich.live import Live
+# from rich.console import Console
+# from rich.table import Table
+# from rich.live import Live
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import defaultdict
+import sqlite3
+import graphistry #pip install graphistry
 
 main_directory = 'DPM_OUT'
 files_subdirectory = 'FILES'
@@ -356,13 +358,13 @@ def searchDependanciesForOne(obj):
 			progress.update(sub_task, total=len(PlwFormat.instances.values()), completed=0)
 			for otherObj in plwFormat.objects:
 				if otherObj != obj:
-					for index, string in enumerate(otherObj.values):
+					for attribute, string in otherObj.attributes.items():
 						if obj.format.searchedByONB:
 							if obj.onb in string:
-								deps.append(ObjDependancy(obj, otherObj, index, True))
+								deps.append(ObjDependancy(obj, otherObj, attribute, True))
 						if obj.format.searchedByNAME:
 							if obj.name in string:
-								deps.append(ObjDependancy(obj, otherObj, index, False))
+								deps.append(ObjDependancy(obj, otherObj, attribute, False))
 				progress.update(sub_task, description = "[green]Class " + plwFormat.table_def.decode('utf-8') + "...", advance=1)
 			progress.advance(main_task, 1)
 	for dep in deps:
@@ -378,7 +380,7 @@ def indexDependancies(globalIndex):
 			for obj in plwFormat.objects:
 				i+=1
 				for otherPlwFormat in PlwFormat.instances.values():
-					# too much false positive with ATV. they all have the same name
+					# too much false positive with ATV. they all have the same name. O(n²). see later for other :(
 					if plwFormat.table_def == b'#%TEMP-TABLE:_ATV_PT_ATT_VAL:' and otherPlwFormat.table_def == b'#%TEMP-TABLE:_ATV_PT_ATT_VAL:':
 						continue
 					for otherObj in otherPlwFormat.objects:
@@ -406,7 +408,9 @@ def processDepLinks(globalIndex):
 							ObjDependancy(obj, caller, attribute, False)
 			progress.advance(main_task, 1)
 
-def dumpLinks(outputPath):
+### dump data
+def dumpEdgesToCSV(outputPath, main_directory):
+	csvPath = os.path.join(outputPath, main_directory + '_callers.csv')
 	id_left = []
 	onb_left = []
 	name_left = []
@@ -418,9 +422,8 @@ def dumpLinks(outputPath):
 	column_right = []
 	byName = []
 	byOnb = []
-	
 	with Progress() as progress:
-		main_task = progress.add_task("[cyan]Preparing csv...", total = len(ObjDependancy.instances))
+		main_task = progress.add_task("[cyan]Preparing data for export in CSV...", total = len(ObjDependancy.instances))
 		for dep in ObjDependancy.instances:
 			id_left.append(dep.left.id.decode('utf-8'))
 			onb_left.append(dep.left.onb.decode('utf-8'))
@@ -434,18 +437,97 @@ def dumpLinks(outputPath):
 			byName.append(str(not(dep.calledByOnb)))
 			byOnb.append(str(dep.calledByOnb))
 			progress.advance(main_task, 1)
-
 	data = {'id_left' : id_left, 'onb_left': onb_left, 'name_left' : name_left,'type_left' : type_left,'id_right' : id_right,'onb_right' : onb_right,'name_right' : name_right,'type_right' : type_right,'column_right' : column_right,'byName' : byName,'byOnb' : byOnb}
+	print('\n Exporting the csv...')
 	df = pd.DataFrame(data)
-	df.to_csv(os.path.join(outputPath, main_directory + '_callers.csv'), sep = ';')
-	print('\n' + os.path.join(outputPath, main_directory + '_callers.csv') + ' exported')
+	df.to_csv(csvPathsep = ';')
+	print('\n' + csvPath + ' exported')
 	
+# DB functions
+def prepareEdges():
+	id_left = []
+	id_right = []
+	column_right = []
+	byName = []
+	byOnb = []
+	with Progress() as progress:
+		main_task = progress.add_task('[cyan]Preparing data for export edges in database...', total = len(ObjDependancy.instances))
+		for dep in ObjDependancy.instances:
+			id_left.append(dep.left.id.decode('utf-8'))
+			id_right.append(dep.right.id.decode('utf-8'))
+			column_right.append(dep.column.decode('utf-8'))
+			byName.append(str(not(dep.calledByOnb)))
+			byOnb.append(str(dep.calledByOnb))
+			progress.advance(main_task, 1)
+	edges = {'source': id_left, 'target': id_right, 'withAttribute': column_right, 'byName': byName, 'byOnb': byOnb}
+	df = pd.DataFrame(edges)
+	df['Id'] = df.index
+	return df
+
+def prepareNodes():
+	objId = []
+	objType = []
+	objAttributes = []
+	objValues = []
+	with Progress() as progress:
+		main_task = progress.add_task('[cyan]Preparing data for export nodes in database...', total = len(PlwObject.instances))
+		for obj in PlwObject.instances.values():
+			objId.append(obj.id.decode('utf-8'))
+			objType.append(obj.format.table_def.decode('utf-8'))
+			objAttributes.append('|'.join([x.decode('utf-8') for x in obj.attributes]))
+			objValues.append('|'.join([x.decode('utf-8', errors='replace') for x in obj.values]))
+			progress.advance(main_task, 1)
+	nodes = {'Id': objId, 'TYPE': objType, 'ATTRIBUTES': objAttributes, 'VALUES': objValues}
+	df = pd.DataFrame(nodes)
+	return df
+
+def dumpTablesToDB(main_directory, outputPath, nodes, edges):
+	db_name = main_directory + '_graph.db'
+	dbPath = os.path.join(outputPath, db_name)
+
+	# Edges
+	if os.path.exists(db_name):
+		print(f"Database {db_name} already present. Data will be overwrited.")
+	print('Exporting edges into database...')
+	conn = sqlite3.connect(dbPath)
+	edges.to_sql('edges', conn, if_exists = 'replace', index = False)
+	conn.close()
+	print(f"Edges exported into {db_name}")
+	
+	# Nodes
+	print('Exporting nodes into database...')
+	conn = sqlite3.connect(dbPath)
+	nodes.to_sql('nodes', conn, if_exists = 'replace', index = False)
+	conn.close()
+	print(f"Nodes exported into {db_name}")
+
+	#table def
+	formatID = []
+	formatTxt = []
+	formatObjectsNumber = []
+	with Progress() as progress:
+		main_task = progress.add_task('[cyan]Preparing data for export nodes in database ' + db_name + '...', total = len(PlwFormat.instances))
+		for oFormat in PlwFormat.instances.values():
+			formatID.append(oFormat.table_def.decode('utf-8'))
+			formatTxt.append(oFormat.txt.decode('utf-8', errors='replace'))
+			formatObjectsNumber.append(str(len(oFormat.objects)))
+			progress.advance(main_task, 1)
+	data = {'ID': formatID, 'TXT': formatTxt, 'OBJECTS': formatObjectsNumber}
+	df = pd.DataFrame(data)
+
+	print('Exporting table definition into database...')
+	conn = sqlite3.connect(dbPath)
+	df.to_sql('TABLEDEF', conn, if_exists = 'replace', index = False)
+	conn.close()
+	print(f"Table definition exported into {db_name}")
+
 def main():
 	signal.signal(signal.SIGINT, signal_handler)
 	parser = argparse.ArgumentParser()
-	parser.add_argument("directory", help="path/to/.../DPM_OUT (created with dpm_extract.py)")
-	parser.add_argument("-b", "--browse", action='store_true', help="Prompted for object visualisation")
-	parser.add_argument("-x", "--exclude", action='store_true', help="Prompted for selection of classes to exclude")
+	parser.add_argument('directory', help='path/to/.../DPM_OUT (created with dpm_extract.py)')
+	parser.add_argument('-b', '--browse', action='store_true', help='Prompted for object visualisation')
+	parser.add_argument('-x', '--exclude', action='store_true', help='Prompted for selection of classes to exclude')
+	parser.add_argument('-m', '--mode', choices=['csv', 'db'], default='csv', help="Export mode : 'csv' or 'db' (default : 'csv')")
 	args = parser.parse_args()
 
 	inputPath = args.directory
@@ -475,30 +557,36 @@ def main():
 		browseObject()
 	globalIndex = defaultdict(list)
 	indexDependancies(globalIndex)
-	# indexDependancies_()
-	# parallelIndexation()
+	# parallelIndexation(globalIndex) # to be tested
 	processDepLinks(globalIndex)
 	outputPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'output')
 	if os.path.isdir(outputPath):
-		dumpLinks(outputPath)
+		if args.mode == 'csv':
+			dumpEdgesToCSV(outputPath, main_directory)
+		else:
+			edges = prepareEdges()
+			nodes = prepareNodes()
+			dumpTablesToDB(main_directory, outputPath, edges, nodes)
+			# g = graphistry.nodes(nodes).edges(edges)
+			# g.plot()
 	else:
 		print(outputPath + ' not found')
 
 if __name__ == '__main__':
     main()
 	
-# lab
-def indexDependancies_():
+# lab (just for the test)
+def parallelIndexation(globalIndex):
 	with Progress() as progress:
 		main_task = progress.add_task("[red]Objects indexation...", total = len(PlwObject.instances))
 		with ThreadPoolExecutor() as executor:
-			futures = [executor.submit(indexer_, obj) for obj in PlwObject.instances.values()]
-			# with Live(creer_table(executor), refresh_per_second=1) as live:
+			futures = [executor.submit(indexer_, obj, globalIndex) for obj in PlwObject.instances.values()]
+			# with Live(createTable(executor), refresh_per_second=1) as live:
 			for future in as_completed(futures):
 				# live.update(creer_table(executor))
 				progress.update(main_task, description = "[cyan]Object indexation found " + str(len(globalIndex.keys())) + "...", advance = 100)
 
-def indexer_(obj):
+def indexer_(obj, globalIndex):
 	i = 0
 	for plwFormat in PlwFormat.instances:
 		for otherObj in PlwObject.instances:
@@ -511,7 +599,7 @@ def indexer_(obj):
 					globalIndex[obj.id].append(otherObj)
 	return i
 
-def creer_table(executor):
+def createTable(executor):
     table = Table(title="Progression des Tâches")
     table.add_column("ID Tâche", justify="center", style="cyan")
     table.add_column("État", justify="center", style="magenta")
