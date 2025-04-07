@@ -400,7 +400,7 @@ def Process_objects(dpm_text_str,out_dir):
 		main_task = progress.add_task("[cyan]Instanciating objects...", total = len(PlwFormat.instances))
 		sub_task = progress.add_task("[green]Class ...", total = 0)
 		for my_format in PlwFormat.instances.values():
-			progress.update(sub_task, total=len(my_format.objects), completed=0)
+			progress.update(sub_task, total=len(my_format.rawData), completed=0)
 			for dpmLine in my_format.rawData: # for each format, describing the class
 				my_class = Dpm_objects_metaclass.instances[my_format.table_def.decode('utf-8')] # search the class, describing the object
 				my_obj = my_class(my_format.table_def, my_format.columns, dpmLine, my_class) # instanciate the object on this class
@@ -625,7 +625,6 @@ def main():
 	myHeader = DpmHeader(dpmText,'Dpm1')
 	Process_classes(dpmText)
 	extractDataForFormat(dpmText,outputPath)
-	print('whiere')
 	if args.exclude:
 		processExclusions()
 	Process_objects(dpmText, outputPath)
