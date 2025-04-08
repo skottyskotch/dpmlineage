@@ -140,6 +140,7 @@ class PlwObject:
 			text = fin.read()
 		pattern = regex.compile(rb'^(#.*)$',regex.MULTILINE)
 		self.path = path
+		self.text = text
 		self.format = PlwFormat.instances[pattern.findall(text)[0].decode('utf-8')]
 		self.format.objects.append(self)
 		self.callers = []
@@ -171,7 +172,6 @@ class PlwObject:
 		self.attributesForSearch = attributesForSearch
         # Flatten the attributes to improve the search latter. For 'global search'
 		self.valuesConcat = b'|'.join(self.attributesForSearch.values())
-
 		PlwObject.instances[self.id] = self
 
 	def show(self):
