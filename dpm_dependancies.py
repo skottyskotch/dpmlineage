@@ -163,9 +163,15 @@ class PlwObject:
 			self.name = self.values[[col.ATT for col in self.format.columns].index(b':NAME')]
 		if self.format.searchedByONB:
 			self.onb = self.values[[col.ATT for col in self.format.columns].index(b':OBJECT-NUMBER')]
-        # Flatten the attributes to improve the search latter
 		self.attributes = {col: val for col, val in zip([c.ATT for c in self.format.columns], self.values)}
-		self.valuesConcat = b'|'.join(self.values)
+		# remove the Name or ONB because those fields aren't intended to reference other objects for sure. For search 'by browsing'
+		attributesForSearch = self.attributes.copy()
+		attributesForSearch.pop(b':NAME', None)
+		attributesForSearch.pop(b':OBJECT-NUMBER', None)
+		self.attributesForSearch = attributesForSearch
+        # Flatten the attributes to improve the search latter. For 'global search'
+		self.valuesConcat = b'|'.join(self.attributesForSearch.values())
+
 		PlwObject.instances[self.id] = self
 
 	def show(self):
@@ -358,7 +364,7 @@ def searchDependanciesForOne(obj):
 			progress.update(sub_task, total=len(PlwFormat.instances.values()), completed=0)
 			for otherObj in plwFormat.objects:
 				if otherObj != obj:
-					for attribute, string in otherObj.attributes.items():
+					for attribute, string in otherObj.attributesForSearch.items():
 						if obj.format.searchedByONB:
 							if obj.onb in string:
 								deps.append(ObjDependancy(obj, otherObj, attribute, True))
@@ -440,7 +446,7 @@ def dumpEdgesToCSV(outputPath, main_directory):
 	data = {'id_left' : id_left, 'onb_left': onb_left, 'name_left' : name_left,'type_left' : type_left,'id_right' : id_right,'onb_right' : onb_right,'name_right' : name_right,'type_right' : type_right,'column_right' : column_right,'byName' : byName,'byOnb' : byOnb}
 	print('\n Exporting the csv...')
 	df = pd.DataFrame(data)
-	df.to_csv(csvPathsep = ';')
+	df.to_csv(csvPath, sep = ';')
 	print('\n' + csvPath + ' exported')
 	
 # DB functions
@@ -474,8 +480,8 @@ def prepareNodes():
 		for obj in PlwObject.instances.values():
 			objId.append(obj.id.decode('utf-8'))
 			objType.append(obj.format.table_def.decode('utf-8'))
-			objAttributes.append('|'.join([x.decode('utf-8') for x in obj.attributes]))
-			objValues.append('|'.join([x.decode('utf-8', errors='replace') for x in obj.values]))
+			objAttributes.append('|'.join([x.decode('utf-8') for x in obj.attributes.keys()]))
+			objValues.append('|'.join([x.decode('utf-8', errors='replace') for x in obj.attributes.values()]))
 			progress.advance(main_task, 1)
 	nodes = {'Id': objId, 'TYPE': objType, 'ATTRIBUTES': objAttributes, 'VALUES': objValues}
 	df = pd.DataFrame(nodes)
