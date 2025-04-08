@@ -13,7 +13,7 @@ from rich.progress import Progress, TaskID # pip install rich
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import defaultdict
 import sqlite3
-import graphistry #pip install graphistry
+# import graphistry #pip install graphistry
 
 main_directory = 'DPM_OUT'
 files_subdirectory = 'FILES'
@@ -352,7 +352,7 @@ def browseObject():
 def searchDependanciesForOne(obj):
 	deps = []
 	with Progress() as progress:
-		main_task = progress.add_task("[cyan]Object " + obj.id.decode('utf-8') + " ...", total = len(PlwFormat.instances))
+		main_task = progress.add_task("[cyan]Callers of " + obj.id.decode('utf-8') + " ...", total = len(PlwFormat.instances))
 		sub_task = progress.add_task("[green]Class ...", total = 0)
 		for plwFormat in PlwFormat.instances.values():
 			progress.update(sub_task, total=len(PlwFormat.instances.values()), completed=0)
