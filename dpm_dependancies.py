@@ -481,7 +481,7 @@ def prepareNodes():
 	df = pd.DataFrame(nodes)
 	return df
 
-def dumpTablesToDB(main_directory, outputPath, nodes, edges):
+def dumpTablesToDB(main_directory, outputPath, edges, nodes):
 	db_name = main_directory + '_graph.db'
 	dbPath = os.path.join(outputPath, db_name)
 
