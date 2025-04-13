@@ -1,0 +1,26 @@
+{
+  "name": "dpm_lineage",
+  "version": "1.0.0",
+  "description": "display configuration object dependancies",
+  "homepage": "https://github.com/skottyskotch/dpmlineage#readme",
+  "bugs": {
+    "url": "https://github.com/skottyskotch/dpmlineage/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/skottyskotch/dpmlineage.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "graphology": "^0.26.0",
+    "sigma": "^3.0.1",
+    "sqlite3": "^5.1.7"
+  }
+}

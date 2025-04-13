@@ -465,7 +465,7 @@ def prepareEdges():
 			byName.append(str(not(dep.calledByOnb)))
 			byOnb.append(str(dep.calledByOnb))
 			progress.advance(main_task, 1)
-	edges = {'source': id_left, 'target': id_right, 'withAttribute': column_right, 'byName': byName, 'byOnb': byOnb}
+	edges = {'SOURCE': id_left, 'TARGET': id_right, 'INATTRIBUTE': column_right, 'BYNAME': byName, 'BYONB': byOnb}
 	df = pd.DataFrame(edges)
 	df['Id'] = df.index
 	return df
@@ -483,7 +483,7 @@ def prepareNodes():
 			objAttributes.append('|'.join([x.decode('utf-8') for x in obj.attributes.keys()]))
 			objValues.append('|'.join([x.decode('utf-8', errors='replace') for x in obj.attributes.values()]))
 			progress.advance(main_task, 1)
-	nodes = {'Id': objId, 'TYPE': objType, 'ATTRIBUTES': objAttributes, 'VALUES': objValues}
+	nodes = {'ID': objId, 'TYPE': objType, 'ATTRIBUTES': objAttributes, 'VALUES': objValues}
 	df = pd.DataFrame(nodes)
 	return df
 
