@@ -13,7 +13,6 @@ from rich.progress import Progress, TaskID # pip install rich
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import defaultdict
 import sqlite3
-# import graphistry #pip install graphistry
 
 main_directory = 'DPM_OUT'
 files_subdirectory = 'FILES'
@@ -573,8 +572,6 @@ def main():
 			edges = prepareEdges()
 			nodes = prepareNodes()
 			dumpTablesToDB(main_directory, outputPath, edges, nodes)
-			# g = graphistry.nodes(nodes).edges(edges)
-			# g.plot()
 	else:
 		print(outputPath + ' not found')
 
