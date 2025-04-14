@@ -1,143 +1,66 @@
-/*
-document.addEventListener('DOMContentLoaded', function() {
-    fetch('http://localhost:3000/api/graph-data')
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok ' + response.statusText);
-            return;
-		})
-        .then(data => {
-            const container = document.getElementById('sigma-container');
-            // const graph = new graphology.Graph();
-            const graph = new graphology.MultiGraph();
-            // Add nodes and edges to the graph
-            data._nodes.forEach(node => {
-				graph.addNode(node.id, {label: node.id, class: node.label, x: node.x, y: node.y});graph.addNode(node.id, {label: node.id, class: node.label, x: node.x, y: node.y});
-			});
-			data._edges.forEach(edge => {
-				graph.addEdge(edge.left, edge.right, edge);
-			});
-
-			settings = {
-                    defaultNodeColor: '#ec5148',
-                    defaultEdgeType: 'curve', // Utilisez des courbes pour les liens
-                    defaultEdgeColor: '#ccc',
-			};
-            // const renderer = new Sigma(graph, container, {defaultEdgeType: 'curvedArrow', enableEdgeEvents: true});
-            const renderer = new window.Sigma(graph, container);
-
-            renderer.on('clickNode', event => {
-                const nodeId = event.node;
-                const nodeData = graph.getNodeAttributes(nodeId);
-                document.getElementById('node-info').innerText = `Node info: ${JSON.stringify(nodeData, null, 2)}`;
-            });
-			
-			renderer.on('enterEdge', ({ edge }) => {
-				hoveredEdge = edge;
-				renderer.refresh();
-			});
-			renderer.on('leaverEdge', ({ edge }) => {
-				hoveredEdge = null;
-				renderer.refresh();
-			});
-            renderer.on('clickEdge', event => {
-                const edgeId = event.edge;
-                const edgeData = graph.getEdgeAttributes(edgeId);
-                document.getElementById('node-info').innerText = `Edge info: ${JSON.stringify(edgeData, null, 2)}`;
-            });
-        })
-        .catch(error => console.error('Error fetching graph data:', error));
-});
-*/
-async function fetchData(a){
+async function fetchData(){
 	const response = await fetch('http://localhost:3000/api/graph-data');
 	const data = await response.json();
 	return data;
 }
 
-async function genGraph(data){
-	var cy = cytoscape({
-		container: document.getElementById('cy'), // container to render in
-	// graph.addNode(node.id, {label: node.id, class: node.label, x: node.x, y: node.y});
-	
-	// elemets: {
-		// nodes: [
-	
-	  elements: [ // list of graph elements to start with
-		{ // node a
-		  data: { id: 'a' }
-		},
-		{ // node b
-		  data: { id: 'b' }
-		},
-		{ // edge ab
-		  data: { id: 'ab', source: 'a', target: 'b' }
-		}
-	  ],
-
-	  style: [ // the stylesheet for the graph
-		{
-		  selector: 'node',
-		  style: {
-			'background-color': '#666',
-			'label': 'data(id)'
-		  }
-		},
-
-		{
-		  selector: 'edge',
-		  style: {
-			'width': 3,
-			'line-color': '#ccc',
-			'target-arrow-color': '#ccc',
-			'target-arrow-shape': 'triangle',
-			'curve-style': 'bezier'
-		  }
-		}
-	  ],
-
-	  layout: {
-		name: 'grid',
-		rows: 1
-	  }
-
-	});
-}
 document.addEventListener('DOMContentLoaded', function() {
 	fetchData().then(data => {
-		// console.log(data._nodes);
-		// console.log(data._edges);
+		const nodes = data._nodes.map(node => ({group: 'nodes', data: {id: node.id, label: node.id+"\n"+node.type}}))
+		const edges = data._edges.map(edge => (
+	{ group: 'edges', data: {id: edge.id, source: edge.source, target: edge.target, inattr: edge.inattr}}))
 		var cy = cytoscape({
 			container: document.getElementById('cy'), // container to render in
 
 			elements: {
-				nodes: data._nodes,
-				edges: data._edges
+				nodes: nodes,
+				edges: edges
 			},
 
 			style: [
 				{
 					selector: 'node',
 					style: {
-						'background-color': '#666',
-						'label': 'data(id)'
+						'background-color': '#333',
+						'label': 'data(label)',
+						'text-wrap': 'wrap'
 					}
 				},
 				{
 					selector: 'edge',
 					style: {
-					'width': 3,
-					'line-color': '#ccc',
-					'target-arrow-color': '#ccc',
-					'target-arrow-shape': 'triangle',
-					'curve-style': 'bezier'
+						'width': 3,
+						'label': 'data(inattr)',
+						'line-color': '#ccc',
+						'target-arrow-color': '#ccc',
+						'target-arrow-shape': 'triangle',
+						'curve-style': 'bezier'
 					}
 				}
-			],
+			]
 
-			// layout: {
-				// name: 'grid',
-				// rows: 1
-			// }
+			,layout: {
+				name: 'breadthfirst',
+
+				fit: true, // whether to fit the viewport to the graph
+				directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
+				padding: 30, // padding on fit
+				circle: false, // put depths in concentric circles if true, put depths top down if false
+				grid: false, // whether to create an even grid into which the DAG is placed (circle:false only)
+				spacingFactor: 1.75, // positive spacing factor, larger => more space between nodes (N.B. n/a if causes overlap)
+				boundingBox: undefined, // constrain layout bounds; { x1, y1, x2, y2 } or { x1, y1, w, h }
+				avoidOverlap: true, // prevents node overlap, may overflow boundingBox if not enough space
+				nodeDimensionsIncludeLabels: false, // Excludes the label when calculating node bounding boxes for the layout algorithm
+				roots: undefined, // the roots of the trees
+				depthSort: undefined, // a sorting function to order nodes at equal depth. e.g. function(a, b){ return a.data('weight') - b.data('weight') }
+				animate: false, // whether to transition the node positions
+				animationDuration: 500, // duration of animation in ms if enabled
+				animationEasing: undefined, // easing of animation if enabled,
+				animateFilter: function ( node, i ){ return true; }, // a function that determines whether the node should be animated.  All nodes animated by default on animate enabled.  Non-animated nodes are positioned immediately when the layout starts
+				ready: undefined, // callback on layoutready
+				stop: undefined, // callback on layoutstop
+				transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts
+			}
 		});
 	});
 });

@@ -19,13 +19,13 @@ app.get('/api/graph-data', (req, res) => {
 				res.status(400).json({"error": err.message});
 				return;
 			}
-			db.all("with cte as (select * from nodes limit 500) select a.Id, SOURCE, TARGET from edges a join cte b on a.source = b.id join cte c on a.target = c.id;", (err, edges) => {
+			db.all("with cte as (select * from nodes limit 500) select a.Id, SOURCE, TARGET, INATTRIBUTE from edges a join cte b on a.source = b.id join cte c on a.target = c.id;", (err, edges) => {
 				if (err) {
 					res.status(400).json({"error": err.message});
 					return;
 				}
-				const _nodes = nodes.map(node => ({ group: 'nodes', data: {id: node.ID, label: node.TYPE, x: Math.random(), y: Math.random(), size: 1 }}))
-				const _edges = edges.map(edge => ({ group: 'edges', data: {id: edge.Id, source: edge.SOURCE, target: edge.TARGET}}));
+				const _nodes = nodes.map(node => ({id: node.ID, type: node.TYPE}))
+				const _edges = edges.map(edge => ({id: edge.Id, source: edge.SOURCE, target: edge.TARGET, inattr: edge.INATTRIBUTE}))
 				res.json({_nodes,_edges});
 			});
 		});
