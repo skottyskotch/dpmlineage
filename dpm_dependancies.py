@@ -233,6 +233,7 @@ class ObjDependancy:
 
 def processFormats(formatPath):
 	pathList = []
+	print(formatPath)
 	for fileFormat in os.listdir(formatPath):
 		if regex.match('^#%',fileFormat):
 			pathList.append(os.path.join(formatPath,fileFormat))
@@ -398,7 +399,7 @@ def indexDependancies(globalIndex):
 
 def processDepLinks(globalIndex):
 	with Progress() as progress:
-		main_task = progress.add_task("[cyan]Processing dependancy...", total = len(ObjDependancy.instances))
+		main_task = progress.add_task("[cyan]Processing dependancies...", total = len(ObjDependancy.instances))
 		for objectId, callers in globalIndex.items():
 			obj = PlwObject.instances[objectId]
 			if obj.format.searchedByONB:
