@@ -6,9 +6,19 @@ async function fetchData(){
 
 document.addEventListener('DOMContentLoaded', function() {
 	fetchData().then(data => {
-		const nodes = data._nodes.map(node => ({group: 'nodes', data: {id: node.id, label: node.id+"\n"+node.type}}))
-		const edges = data._edges.map(edge => (
-	{ group: 'edges', data: {id: edge.id, source: edge.source, target: edge.target, inattr: edge.inattr}}))
+		const nodes = data._nodes.map(node => {
+			var sType = node.type.replace(/^[^:]*/,'');
+			return {
+				group: 'nodes', data: {id: node.id, label: node.id+"\n"+node.type.replace(/^[^:]*:/,'').replace(':','')}
+			};
+		});
+		const edges = data._edges.map(edge => {
+			var foundby = '(name)';
+			if (edge.byname == 'FALSE') foundby = '(ONB)';
+			return {
+				group: 'edges', data: {id: edge.id, source: edge.source, target: edge.target, inattr: edge.inattr.substring(1) + ' ' + foundby}
+			}
+		});
 		var cy = cytoscape({
 			container: document.getElementById('cy'), // container to render in
 
@@ -31,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					style: {
 						'width': 3,
 						'label': 'data(inattr)',
+						'edge-text-rotation': 'autorotate',
 						'line-color': '#ccc',
 						'target-arrow-color': '#ccc',
 						'target-arrow-shape': 'triangle',
