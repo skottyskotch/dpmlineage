@@ -4,6 +4,51 @@ async function fetchData(){
 	return data;
 }
 
+async function fetchNode(id){
+	const response = await fetch('http://localhost:3000/api/graph-data/node?ID='+id);
+	const data = await response.json();
+	var attributes = data.node[0].ATTRIBUTES.split('|');
+	var values = data.node[0].VALUES.split('|');
+	var title = data.node[0].TYPE;
+
+    const oldDiv = document.getElementById('infos');
+    if (oldDiv) oldDiv.remove();
+	const oldTitle = document.getElementById('title');
+	if (oldTitle) oldTitle.remove();
+
+	const newTitle = document.createElement('div');
+	newTitle.textContent = title;
+	newTitle.id = 'title';
+	document.getElementById('node-info').appendChild(newTitle);
+
+    const newDiv = document.createElement('div');
+    newDiv.id = 'infos';
+
+    for (let i = 0; i < attributes.length; i++) {
+        const key = document.createElement('div');
+        key.textContent = attributes[i];
+		key.classList.add(`kv-${attributes[i]}`); // <- dynamic class
+		
+        const value = document.createElement('div');
+        value.textContent = values[i];
+		value.classList.add(`kv-${attributes[i]}`);
+		
+		if (attributes[i] === ':NAME') {
+            key.classList.add('highlight-yellow');
+            value.classList.add('highlight-yellow');
+        }
+		if (attributes[i] === ':OBJECT-NUMBER') {
+            key.classList.add('highlight-blue');
+            value.classList.add('highlight-blue');
+        }
+        newDiv.appendChild(key);
+        newDiv.appendChild(value);
+    }
+	
+    // Add the new div in the parent node-info
+    document.getElementById('node-info').appendChild(newDiv);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	fetchData().then(data => {
 		const nodes = data._nodes.map(node => {
@@ -31,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				{
 					selector: 'node',
 					style: {
-						'background-color': '#333',
+						'background-color': '#666',
 						'label': 'data(label)',
 						'text-wrap': 'wrap'
 					}
@@ -73,5 +118,45 @@ document.addEventListener('DOMContentLoaded', function() {
 				transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts
 			}
 		});
+
+		cy.on('tap', 'node', function(evt){
+			const clickedNode = evt.target;
+			cy.nodes().forEach(n => {
+				n.style({
+					'background-color': '#666',
+					'width': 30,
+					'height': 30
+				});
+			});
+			clickedNode.style({
+				'background-color': 'red',
+				'width': 50,
+				'height': 50
+			});
+			const incomingNodes = clickedNode.incomers('edge').sources();
+			lastSelectedNode = clickedNode;
+			incomingNodes.forEach(node => {
+				node.style('background-color', '#ff9999');
+			});
+			fetchNode(this.id());
+		});
+		
+		// to finish
+		// cy.on('mousedown', 'edge', function(evt) {
+			// const edge = evt.target;
+			// const label = edge.data('label');
+
+			// document.querySelectorAll(`.kv-${label}`).forEach(el => {
+				// el.classList.add('highlight-yellow');
+			// });
+		// });
+
+		// cy.on('mouseup', function(evt) {
+			// document.querySelectorAll(`[class*="kv-"]`).forEach(el => {
+				// el.classList.remove('highlight-yellow');
+			// });
+		// });
 	});
 });
+
+

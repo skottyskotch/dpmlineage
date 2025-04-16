@@ -32,6 +32,18 @@ app.get('/api/graph-data', (req, res) => {
 	});
 });
 
+app.get('/api/graph-data/node', (req,res) => {
+	var sQuery = "SELECT ATTRIBUTES, \"VALUES\", TYPE from nodes where ID = " + req.query.ID + ";";
+	db.all(sQuery, (err, node) => {
+		if (err) {
+			if (err.message = "SQLITE_ERROR: no such column: undefined") err.message += ". Valid request is like /api/graph-data/node?ID=...";
+			res.status(400).json({"error": err.message});
+			return;
+		}
+		res.json({node});
+	});
+});
+
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
 });
