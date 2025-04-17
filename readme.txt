@@ -3,6 +3,7 @@ install python
 pip install pandas
 pip install inquirer
 pip install rich
+pip install regex
 install node.js
 go in www
 npm install

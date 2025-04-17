@@ -3,7 +3,7 @@ import io
 import gzip
 import sys
 import os
-import regex
+import regex # pip install regex
 import hashlib
 import argparse
 import inquirer # pip install inquirer

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import os
-import regex
+import regex # pip install regex
 import argparse
 import sys
 import signal

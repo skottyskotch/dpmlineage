@@ -27,15 +27,15 @@ async function fetchNode(id){
     for (let i = 0; i < attributes.length; i++) {
         const key = document.createElement('div');
         key.textContent = attributes[i];
-		key.classList.add(`kv-${attributes[i]}`); // <- dynamic class
+		key.classList.add(`kv-${attributes[i]}`.replace(':','')); // <- dynamic class
 		
         const value = document.createElement('div');
         value.textContent = values[i];
-		value.classList.add(`kv-${attributes[i]}`);
+		value.classList.add(`kv-${attributes[i]}`.replace(':',''));
 		
 		if (attributes[i] === ':NAME') {
-            key.classList.add('highlight-yellow');
-            value.classList.add('highlight-yellow');
+            key.classList.add('highlight-green');
+            value.classList.add('highlight-green');
         }
 		if (attributes[i] === ':OBJECT-NUMBER') {
             key.classList.add('highlight-blue');
@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			var foundby = '(name)';
 			if (edge.byname == 'FALSE') foundby = '(ONB)';
 			return {
-				group: 'edges', data: {id: edge.id, source: edge.source, target: edge.target, inattr: edge.inattr.substring(1) + ' ' + foundby}
+				group: 'edges', data: {id: edge.id, source: edge.source, target: edge.target, inattr: edge.inattr, label: edge.inattr.substring(1) + ' ' + foundby}
 			}
 		});
 		var cy = cytoscape({
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					selector: 'edge',
 					style: {
 						'width': 3,
-						'label': 'data(inattr)',
+						'label': 'data(label)',
 						'edge-text-rotation': 'autorotate',
 						'line-color': '#ccc',
 						'target-arrow-color': '#ccc',
@@ -142,21 +142,18 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 		
 		// to finish
-		// cy.on('mousedown', 'edge', function(evt) {
-			// const edge = evt.target;
-			// const label = edge.data('label');
+		cy.on('mousedown', 'edge', function(evt) {
+			const edge = evt.target;
+			const inattr = edge.data('inattr').replace(':','');
+			document.querySelectorAll(`.kv-${inattr}`).forEach(el => {
+				el.classList.add('highlight-yellow');
+			});
+		});
 
-			// document.querySelectorAll(`.kv-${label}`).forEach(el => {
-				// el.classList.add('highlight-yellow');
-			// });
-		// });
-
-		// cy.on('mouseup', function(evt) {
-			// document.querySelectorAll(`[class*="kv-"]`).forEach(el => {
-				// el.classList.remove('highlight-yellow');
-			// });
-		// });
+		cy.on('mouseup', function(evt) {
+			document.querySelectorAll(`[class*="kv-"]`).forEach(el => {
+				el.classList.remove('highlight-yellow');
+			});
+		});
 	});
 });
-
-

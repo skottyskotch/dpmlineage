@@ -33,12 +33,16 @@ html, body {
     margin-top: 5px;
 }
 
-.highlight-yellow {
+.highlight-green {
     background-color: lightgreen;
 }
 
 .highlight-blue {
     background-color: lightblue;
+}
+
+.highlight-yellow {
+	background-color: yellow !important;
 }
 
 #title {
