@@ -7,12 +7,11 @@ import signal
 import pandas as pd # pip install pandas
 import inquirer # pip install inquirer
 from rich.progress import Progress, TaskID # pip install rich
-# from rich.console import Console
-# from rich.table import Table
-# from rich.live import Live
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import defaultdict
 import sqlite3
+from memory_profiler import profile
+import csv
 
 main_directory = 'DPM_OUT'
 files_subdirectory = 'FILES'
@@ -204,7 +203,7 @@ class ObjDependancy:
 	@classmethod
 	def showAll(cls):
 		print(str(len(cls.instances)) + ' dependancies found')
-		print('\t'.join(['id_left','onb_left','name_left', 'type_left', 'id_right','onb_right','name_right', 'type_righ', 'column_right','byName','byOnb']))
+		print('\t'.join(['id_left','onb_left','name_left', 'type_left', 'id_right','onb_right','name_right', 'type_right', 'column_right','byName','byOnb']))
 		msg = []
 		for dep in cls.instances:
 			line = []
@@ -247,7 +246,6 @@ def processFormats(formatPath):
 
 def mapDirectories(filesPath, otherPath):
 	tableDefList = [x for x in PlwFormat.instances.keys()]
-	tableDefObjectsDirs = []
 	if os.path.isdir(filesPath):
 		for root, dirs, files in os.walk(filesPath):
 			for tableDefObjectDir in dirs:
@@ -260,7 +258,6 @@ def mapDirectories(filesPath, otherPath):
 			for tableDefObjectDir in dirs:
 				for tableDefName in tableDefList:
 					if tableDefObjectDir == regex.sub(r'[:\?\*<>\|]','_', tableDefName):
-						tableDefObjectsDirs.append(os.path.join(root,tableDefObjectDir))
 						PlwFormat.instances[tableDefName].objectPath = os.path.join(root,tableDefObjectDir)
 						PlwFormat.instances[tableDefName].nb_objects += len(os.listdir(os.path.join(root,tableDefObjectDir)))
 
@@ -269,6 +266,10 @@ def processExclusions():
 	dictTableDef = checkboxChooser('Class','Select classes to exclude',[(str(x.nb_objects).ljust(8) + x.name.decode('utf-8'),x) for x in classList])
 	for plwFormat in dictTableDef['Class']:
 		del PlwFormat.instances[plwFormat.table_def.decode('utf-8')]
+
+def processObjects(filesPath, otherPath):
+	processObjectsWithFiles(filesPath)
+	processObjectsWithoutFiles(otherPath)
 
 def processObjectsWithFiles(filesPath):
 	pathList = []
@@ -417,115 +418,176 @@ def processDepLinks(globalIndex):
 ### dump data
 def dumpEdgesToCSV(outputPath, main_directory):
 	csvPath = os.path.join(outputPath, main_directory + '_callers.csv')
-	id_left = []
-	onb_left = []
-	name_left = []
-	type_left = []
-	id_right = []
-	onb_right = []
-	name_right = []
-	type_right = []
-	column_right = []
-	byName = []
-	byOnb = []
-	with Progress() as progress:
-		main_task = progress.add_task("[cyan]Preparing data for export in CSV...", total = len(ObjDependancy.instances))
-		for dep in ObjDependancy.instances:
-			id_left.append(dep.left.id.decode('utf-8'))
-			onb_left.append(dep.left.onb.decode('utf-8'))
-			name_left.append(dep.left.name.decode('utf-8'))
-			type_left.append(dep.left.format.table_def.decode('utf-8'))
-			id_right.append(dep.right.id.decode('utf-8'))
-			onb_right.append(dep.right.onb.decode('utf-8'))
-			name_right.append(dep.right.name.decode('utf-8'))
-			type_right.append(dep.right.format.table_def.decode('utf-8'))
-			column_right.append(dep.column.decode('utf-8'))
-			byName.append(str(not(dep.calledByOnb)))
-			byOnb.append(str(dep.calledByOnb))
-			progress.advance(main_task, 1)
-	data = {'id_left' : id_left, 'onb_left': onb_left, 'name_left' : name_left,'type_left' : type_left,'id_right' : id_right,'onb_right' : onb_right,'name_right' : name_right,'type_right' : type_right,'column_right' : column_right,'byName' : byName,'byOnb' : byOnb}
-	print('\n Exporting the csv...')
-	df = pd.DataFrame(data)
-	df.to_csv(csvPath, sep = ';')
+	with open(csvPath, mode='w', newline='', encoding='utf-8') as file:
+		writer = csv.writer(file, delimiter=';')
+		writer.writerow(['id_left', 'onb_left', 'name_left', 'type_left', 
+							'id_right', 'onb_right', 'name_right', 'type_right', 
+							'column_right', 'byName', 'byOnb'])
+		with Progress() as progress:
+			main_task = progress.add_task("[cyan]Preparing data for export in CSV...", total = len(ObjDependancy.instances))
+			for dep in ObjDependancy.instances:
+				writer.writerow([
+					dep.left.id.decode('utf-8'),
+					dep.left.onb.decode('utf-8'),
+					dep.left.name.decode('utf-8'),
+					dep.left.format.table_def.decode('utf-8'),
+					dep.right.id.decode('utf-8'),
+					dep.right.onb.decode('utf-8'),
+					dep.right.name.decode('utf-8'),
+					dep.right.format.table_def.decode('utf-8'),
+					dep.column.decode('utf-8'),
+					str(not(dep.calledByOnb)),
+					str(dep.calledByOnb)
+				])
+				progress.advance(main_task, 1)
 	print('\n' + csvPath + ' exported')
-	
+
 # DB functions
-def prepareEdges():
+def createEdgesTable(conn):
+	conn.execute('DROP TABLE IF EXISTS edges')
+	query = '''
+	CREATE TABLE IF NOT EXISTS edges (
+		SOURCE TEXT,
+		TARGET TEXT,
+		INATTRIBUTE TEXT,
+		BYNAME TEXT,
+		BYONB TEXT,
+		DATA TEXT
+	)
+	'''
+	conn.execute(query)
+	conn.commit()
+
+def createNodesTable(conn):
+	conn.execute('DROP TABLE IF EXISTS nodes')
+	query = '''
+	CREATE TABLE IF NOT EXISTS nodes (
+		ID TEXT,
+		TYPE TEXT,
+		ATTRIBUTES TEXT,
+		DATA TEXT
+	)
+	'''
+	conn.execute(query)
+	conn.commit()
+
+def createTableDefTable(conn):
+	conn.execute('DROP TABLE IF EXISTS TABLEDEF')
+	query = '''
+	CREATE TABLE IF NOT EXISTS TABLEDEF (
+		ID TEXT,
+		TXT TEXT,
+		OBJECTS TEXT
+	)
+	'''
+	conn.execute(query)
+	conn.commit()
+
+def insertBatch(cursor, table_name, rows, columns):
+	placeholders = ', '.join(['?'] * len(columns))
+	query = f"INSERT INTO {table_name} ({', '.join(columns)}) VALUES ({placeholders})"
+	try:
+		cursor.executemany(query, rows)  # Insertion par lots
+	except sqlite3.OperationalError as e:
+		print(f"Error executing query: {query}")
+		print(f"Rows attempted to insert: {rows}")
+		raise e
+
+def prepareEdgesAndInsert(db_connection, cursor, batchSize=10000):
 	id_left = []
 	id_right = []
 	column_right = []
 	byName = []
 	byOnb = []
 	with Progress() as progress:
-		main_task = progress.add_task('[cyan]Preparing data for export edges in database...', total = len(ObjDependancy.instances))
+		main_task = progress.add_task('[cyan]Inserting edges in database (batchSize = ' + str(batchSize) + ')...', total=len(ObjDependancy.instances))
 		for dep in ObjDependancy.instances:
 			id_left.append(dep.left.id.decode('utf-8'))
 			id_right.append(dep.right.id.decode('utf-8'))
 			column_right.append(dep.column.decode('utf-8'))
-			byName.append(str(not(dep.calledByOnb)))
+			byName.append(str(not dep.calledByOnb))
 			byOnb.append(str(dep.calledByOnb))
+			if len(id_left) >= batchSize:
+				rows = list(zip(id_left, id_right, column_right, byName, byOnb))
+				insertBatch(cursor, 'edges', rows, ['SOURCE', 'TARGET', 'INATTRIBUTE', 'BYNAME', 'BYONB'])
+				id_left.clear()
+				id_right.clear()
+				column_right.clear()
+				byName.clear()
+				byOnb.clear()
+				db_connection.commit()
 			progress.advance(main_task, 1)
-	edges = {'SOURCE': id_left, 'TARGET': id_right, 'INATTRIBUTE': column_right, 'BYNAME': byName, 'BYONB': byOnb}
-	df = pd.DataFrame(edges)
-	df['Id'] = df.index
-	return df
+		if id_left:
+			rows = list(zip(id_left, id_right, column_right, byName, byOnb))
+			insertBatch(cursor, 'edges', rows, ['SOURCE', 'TARGET', 'INATTRIBUTE', 'BYNAME', 'BYONB'])
+			db_connection.commit()
 
-def prepareNodes():
+def prepareNodesAndInsert(db_connection, cursor, batchSize=1000):
 	objId = []
 	objType = []
 	objAttributes = []
 	objValues = []
 	with Progress() as progress:
-		main_task = progress.add_task('[cyan]Preparing data for export nodes in database...', total = len(PlwObject.instances))
+		main_task = progress.add_task('[cyan]Preparing nodes for database...', total=len(PlwObject.instances))
 		for obj in PlwObject.instances.values():
 			objId.append(obj.id.decode('utf-8'))
 			objType.append(obj.format.table_def.decode('utf-8'))
 			objAttributes.append('|'.join([x.decode('utf-8') for x in obj.attributes.keys()]))
 			objValues.append('|'.join([x.decode('utf-8', errors='replace') for x in obj.attributes.values()]))
+			if len(objId) >= batchSize:
+				rows = list(zip(objId, objType, objAttributes, objValues))
+				insertBatch(cursor, 'nodes', rows, ['ID', 'TYPE', 'ATTRIBUTES', 'DATA'])
+				objId.clear()
+				objType.clear()
+				objAttributes.clear()
+				objValues.clear()
+				db_connection.commit()
 			progress.advance(main_task, 1)
-	nodes = {'ID': objId, 'TYPE': objType, 'ATTRIBUTES': objAttributes, 'VALUES': objValues}
-	df = pd.DataFrame(nodes)
-	return df
+		if objId:
+			rows = list(zip(objId, objType, objAttributes, objValues))
+			insertBatch(cursor, 'nodes', rows, ['ID', 'TYPE', 'ATTRIBUTES', 'DATA'])
+			db_connection.commit()
 
-def dumpTablesToDB(main_directory, outputPath, edges, nodes):
+def dumpTablesToDB(main_directory, outputPath):
 	db_name = main_directory + '_graph.db'
 	dbPath = os.path.join(outputPath, db_name)
 
-	# Edges
-	if os.path.exists(db_name):
-		print(f"Database {db_name} already present. Data will be overwrited.")
+	if os.path.exists(dbPath):
+		print(f"Database {db_name} already present. Data will be overwritten.")
+
+	conn = sqlite3.connect(dbPath)
+	createEdgesTable(conn)
+	createNodesTable(conn)
+	createTableDefTable(conn)
+	cursor = conn.cursor()
+
 	print('Exporting edges into database...')
-	conn = sqlite3.connect(dbPath)
-	edges.to_sql('edges', conn, if_exists = 'replace', index = False)
-	conn.close()
+	prepareEdgesAndInsert(conn, cursor)
 	print(f"Edges exported into {db_name}")
-	
-	# Nodes
+
 	print('Exporting nodes into database...')
-	conn = sqlite3.connect(dbPath)
-	nodes.to_sql('nodes', conn, if_exists = 'replace', index = False)
-	conn.close()
+	prepareNodesAndInsert(conn, cursor)
 	print(f"Nodes exported into {db_name}")
 
-	#table def
 	formatID = []
 	formatTxt = []
 	formatObjectsNumber = []
 	with Progress() as progress:
-		main_task = progress.add_task('[cyan]Preparing data for export nodes in database ' + db_name + '...', total = len(PlwFormat.instances))
+		main_task = progress.add_task('[cyan]Preparing data for export table definition...', total=len(PlwFormat.instances))
 		for oFormat in PlwFormat.instances.values():
 			formatID.append(oFormat.table_def.decode('utf-8'))
 			formatTxt.append(oFormat.txt.decode('utf-8', errors='replace'))
 			formatObjectsNumber.append(str(len(oFormat.objects)))
 			progress.advance(main_task, 1)
-	data = {'ID': formatID, 'TXT': formatTxt, 'OBJECTS': formatObjectsNumber}
-	df = pd.DataFrame(data)
 
+	data = {'ID': formatID, 'TXT': formatTxt, 'OBJECTS': formatObjectsNumber}
+	df_tabledef = pd.DataFrame(data)
 	print('Exporting table definition into database...')
-	conn = sqlite3.connect(dbPath)
-	df.to_sql('TABLEDEF', conn, if_exists = 'replace', index = False)
-	conn.close()
+	insertBatch(cursor, 'TABLEDEF', df_tabledef.to_records(index=False), df_tabledef.columns)
+	conn.commit()
 	print(f"Table definition exported into {db_name}")
+	conn.close()
+	print(f"\nDatabase {db_name} exported successfully.")
 
 def main():
 	signal.signal(signal.SIGINT, signal_handler)
@@ -557,8 +619,7 @@ def main():
 	if args.exclude:
 		mapDirectories(filesPath, otherPath)
 		processExclusions()
-	processObjectsWithFiles(filesPath)
-	processObjectsWithoutFiles(otherPath)
+	processObjects(filesPath, otherPath)
 	if args.browse:
 		browseObject()
 	globalIndex = defaultdict(list)
@@ -570,47 +631,9 @@ def main():
 		if args.mode == 'csv':
 			dumpEdgesToCSV(outputPath, main_directory)
 		else:
-			edges = prepareEdges()
-			nodes = prepareNodes()
-			dumpTablesToDB(main_directory, outputPath, edges, nodes)
+			dumpTablesToDB(main_directory, outputPath)
 	else:
 		print(outputPath + ' not found')
 
 if __name__ == '__main__':
     main()
-	
-# lab (just for the test)
-def parallelIndexation(globalIndex):
-	with Progress() as progress:
-		main_task = progress.add_task("[red]Objects indexation...", total = len(PlwObject.instances))
-		with ThreadPoolExecutor() as executor:
-			futures = [executor.submit(indexer_, obj, globalIndex) for obj in PlwObject.instances.values()]
-			# with Live(createTable(executor), refresh_per_second=1) as live:
-			for future in as_completed(futures):
-				# live.update(creer_table(executor))
-				progress.update(main_task, description = "[cyan]Object indexation found " + str(len(globalIndex.keys())) + "...", advance = 100)
-
-def indexer_(obj, globalIndex):
-	i = 0
-	for plwFormat in PlwFormat.instances:
-		for otherObj in PlwObject.instances:
-			i+=1
-			if otherObj != obj:
-				# pass
-				if obj.format.searchedByONB and obj.onb in otherObj.valuesConcat:
-					globalIndex[obj.id].append(otherObj)
-				if obj.format.searchedByNAME and obj.name in otherObj.valuesConcat:
-					globalIndex[obj.id].append(otherObj)
-	return i
-
-def createTable(executor):
-    table = Table(title="Progression des Tâches")
-    table.add_column("ID Tâche", justify="center", style="cyan")
-    table.add_column("État", justify="center", style="magenta")
-    table.add_column("Résultat", justify="center", style="green")
-    # Ajouter les tâches à la table
-    for i, future in enumerate(futures):
-        etat = "En attente" if not future.running() else "En cours"
-        resultat = "" if not future.done() else str(future.result())
-        table.add_row(str(i), etat, resultat)
-    return table
