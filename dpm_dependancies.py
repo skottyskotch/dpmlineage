@@ -10,7 +10,6 @@ from rich.progress import Progress, TaskID # pip install rich
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import defaultdict
 import sqlite3
-from memory_profiler import profile
 import csv
 
 main_directory = 'DPM_OUT'
@@ -28,19 +27,20 @@ def signal_handler(sig, frame):
 def listChooser(sKey, sQuestion, lList):
     questions = [inquirer.List(
         sKey,
-        message=sQuestion,
-        choices=lList,
-        carousel=True
+        message = sQuestion,
+        choices = lList,
+        carousel = True
     )]
     answers = inquirer.prompt(questions)  # returns a dict
     return answers
 
-def checkboxChooser(sKey, sQuestion, lList):
+def checkboxChooser(sKey, sQuestion, lChoices, lDefault):
     questions = [inquirer.Checkbox(
         sKey,
-        message=sQuestion,
-        choices=lList,
-        carousel=True
+        message = sQuestion,
+        choices = lChoices,
+		default = lDefault,
+        carousel = True
     )]
     answers = inquirer.prompt(questions)  # returns a dict
     return answers
@@ -261,11 +261,27 @@ def mapDirectories(filesPath, otherPath):
 						PlwFormat.instances[tableDefName].objectPath = os.path.join(root,tableDefObjectDir)
 						PlwFormat.instances[tableDefName].nb_objects += len(os.listdir(os.path.join(root,tableDefObjectDir)))
 
-def processExclusions():
+def processExclusions(outputPath, main_directory):
+	exclusionFilePath = os.path.join(outputPath, main_directory + '_exclusion.txt')
+	bLoadExclusions = False
 	classList = sorted(PlwFormat.instances.values(), key=lambda o: o.nb_objects, reverse=True)
-	dictTableDef = checkboxChooser('Class','Select classes to exclude',[(str(x.nb_objects).ljust(8) + x.name.decode('utf-8'),x) for x in classList])
+	choices = [(str(x.nb_objects).ljust(8) + x.name.decode('utf-8'),x) for x in classList]
+	default = []
+	if os.path.isfile(exclusionFilePath):
+		selection = listChooser('Exclusion','An exclusion file has been found. Load it?',['yes','no'])		
+		if selection['Exclusion'] == 'yes':
+			lines = []
+			with open(exclusionFilePath, 'r') as fexcl:
+				lines = [line.strip() for line in fexcl]
+			default = [PlwFormat.instances[line] for line in lines if line in PlwFormat.instances.keys() ]
+			rejected = [line for line in lines if line not in PlwFormat.instances.keys()]
+			if len(rejected) > 0:
+				print('Table definitions rejected (not found in the dpm): ' + ','.join(rejected))
+	dictTableDef = checkboxChooser('Class','Select classes to exclude', choices, default)
 	for plwFormat in dictTableDef['Class']:
 		del PlwFormat.instances[plwFormat.table_def.decode('utf-8')]
+	with open(exclusionFilePath, 'w') as fout:
+		fout.write('\n'.join([plwFormat.table_def.decode('utf-8') for plwFormat in dictTableDef['Class']]))
 
 def processObjects(filesPath, otherPath):
 	processObjectsWithFiles(filesPath)
@@ -396,7 +412,7 @@ def indexDependancies(globalIndex):
 								globalIndex[obj.id].append(otherObj)
 							if obj.format.searchedByNAME and obj.name in otherObj.valuesConcat:
 								globalIndex[obj.id].append(otherObj)
-				progress.update(main_task, description = "[cyan]Object indexation " + str(i) + "/" + str(len(PlwObject.instances)) + ". Found " + str(len(globalIndex.keys())) + "...", advance = 1)
+				progress.update(main_task, description = "[cyan]Object indexation " + str(i) + "/" + str(len(PlwObject.instances)) + ". Found " + str(len(globalIndex.keys())) + " objects called by other(s)...", advance = 1)
 
 def processDepLinks(globalIndex):
 	with Progress() as progress:
@@ -415,7 +431,7 @@ def processDepLinks(globalIndex):
 							ObjDependancy(obj, caller, attribute, False)
 			progress.advance(main_task, 1)
 
-### dump data
+### dump csv
 def dumpEdgesToCSV(outputPath, main_directory):
 	csvPath = os.path.join(outputPath, main_directory + '_callers.csv')
 	with open(csvPath, mode='w', newline='', encoding='utf-8') as file:
@@ -424,7 +440,7 @@ def dumpEdgesToCSV(outputPath, main_directory):
 							'id_right', 'onb_right', 'name_right', 'type_right', 
 							'column_right', 'byName', 'byOnb'])
 		with Progress() as progress:
-			main_task = progress.add_task("[cyan]Preparing data for export in CSV...", total = len(ObjDependancy.instances))
+			main_task = progress.add_task("[cyan]Exporting data to CSV (" + str(len(ObjDependancy.instances)) + ")...", total = len(ObjDependancy.instances))
 			for dep in ObjDependancy.instances:
 				writer.writerow([
 					dep.left.id.decode('utf-8'),
@@ -528,7 +544,7 @@ def prepareNodesAndInsert(db_connection, cursor, batchSize=1000):
 	objAttributes = []
 	objValues = []
 	with Progress() as progress:
-		main_task = progress.add_task('[cyan]Preparing nodes for database...', total=len(PlwObject.instances))
+		main_task = progress.add_task('[cyan]Inserting nodes in database...', total=len(PlwObject.instances))
 		for obj in PlwObject.instances.values():
 			objId.append(obj.id.decode('utf-8'))
 			objType.append(obj.format.table_def.decode('utf-8'))
@@ -561,11 +577,9 @@ def dumpTablesToDB(main_directory, outputPath):
 	createTableDefTable(conn)
 	cursor = conn.cursor()
 
-	print('Exporting edges into database...')
 	prepareEdgesAndInsert(conn, cursor)
 	print(f"Edges exported into {db_name}")
 
-	print('Exporting nodes into database...')
 	prepareNodesAndInsert(conn, cursor)
 	print(f"Nodes exported into {db_name}")
 
@@ -573,7 +587,7 @@ def dumpTablesToDB(main_directory, outputPath):
 	formatTxt = []
 	formatObjectsNumber = []
 	with Progress() as progress:
-		main_task = progress.add_task('[cyan]Preparing data for export table definition...', total=len(PlwFormat.instances))
+		main_task = progress.add_task('[cyan]Inserting table table definition in database...', total=len(PlwFormat.instances))
 		for oFormat in PlwFormat.instances.values():
 			formatID.append(oFormat.table_def.decode('utf-8'))
 			formatTxt.append(oFormat.txt.decode('utf-8', errors='replace'))
@@ -582,7 +596,6 @@ def dumpTablesToDB(main_directory, outputPath):
 
 	data = {'ID': formatID, 'TXT': formatTxt, 'OBJECTS': formatObjectsNumber}
 	df_tabledef = pd.DataFrame(data)
-	print('Exporting table definition into database...')
 	insertBatch(cursor, 'TABLEDEF', df_tabledef.to_records(index=False), df_tabledef.columns)
 	conn.commit()
 	print(f"Table definition exported into {db_name}")
@@ -598,14 +611,16 @@ def main():
 	parser.add_argument('-m', '--mode', choices=['csv', 'db'], default='csv', help="Export mode : 'csv' or 'db' (default : 'csv')")
 	args = parser.parse_args()
 
+	global main_directory
 	inputPath = args.directory
 	formatPath = ''
 	filesPath = ''
-	global main_directory
+	outputPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'output')
+	main_directory = os.path.basename(inputPath)
+	
 	if os.path.isdir(inputPath) and main_directory not in os.path.basename(inputPath):
 		print(args.directory + ' is not a base directory of an extracted dpm (.../' + main_directory + ')')
 		return
-	main_directory = os.path.basename(inputPath)
 	formatPath = ''
 	filesPath = ''
 	otherPath = ''
@@ -618,7 +633,7 @@ def main():
 	processFormats(formatPath)
 	if args.exclude:
 		mapDirectories(filesPath, otherPath)
-		processExclusions()
+		processExclusions(outputPath, main_directory)
 	processObjects(filesPath, otherPath)
 	if args.browse:
 		browseObject()
@@ -626,7 +641,6 @@ def main():
 	indexDependancies(globalIndex)
 	# parallelIndexation(globalIndex) # to be tested
 	processDepLinks(globalIndex)
-	outputPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'output')
 	if os.path.isdir(outputPath):
 		if args.mode == 'csv':
 			dumpEdgesToCSV(outputPath, main_directory)
