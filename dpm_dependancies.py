@@ -24,6 +24,11 @@ def signal_handler(sig, frame):
     print('Thanks')
     sys.exit(0)
 
+def checkArgPath(p):
+    if not os.path.exists(p):
+        raise argparse.ArgumentTypeError(f"The directory '{p}' does not exist.")
+    return p
+
 def listChooser(sKey, sQuestion, lList):
     questions = [inquirer.List(
         sKey,
@@ -605,7 +610,7 @@ def dumpTablesToDB(main_directory, outputPath):
 def main():
 	signal.signal(signal.SIGINT, signal_handler)
 	parser = argparse.ArgumentParser()
-	parser.add_argument('directory', help='path/to/.../DPM_OUT (created with dpm_extract.py)')
+	parser.add_argument('directory', type=checkArgPath, help='path/to/.../DPM_OUT (created with dpm_extract.py)')
 	parser.add_argument('-b', '--browse', action='store_true', help='Prompted for object visualisation')
 	parser.add_argument('-x', '--exclude', action='store_true', help='Prompted for selection of classes to exclude')
 	parser.add_argument('-m', '--mode', choices=['csv', 'db'], default='csv', help="Export mode : 'csv' or 'db' (default : 'csv')")
@@ -615,18 +620,19 @@ def main():
 	inputPath = args.directory
 	formatPath = ''
 	filesPath = ''
-	outputPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'output')
 	main_directory = os.path.basename(inputPath)
+	outputPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'output')
+	if not os.path.exists(outputPath):
+		os.makedirs(outputPath)
 	
 	if os.path.isdir(inputPath) and main_directory not in os.path.basename(inputPath):
 		print(args.directory + ' is not a base directory of an extracted dpm (.../' + main_directory + ')')
 		return
-	formatPath = ''
-	filesPath = ''
-	otherPath = ''
+
 	for root, dirs, files in os.walk(inputPath):
 		if format_subdirectory in dirs and files_subdirectory in dirs:
 			formatPath = os.path.join(inputPath,format_subdirectory)
+			print(formatPath)
 			filesPath = os.path.join(inputPath,files_subdirectory)
 			otherPath = os.path.join(inputPath,files_subdirectory,objects_without_file_directory)
 			break
