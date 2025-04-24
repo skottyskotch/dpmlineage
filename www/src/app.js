@@ -8,7 +8,8 @@ async function fetchNode(id){
 	const response = await fetch('http://localhost:3000/api/graph-data/node?ID='+id);
 	const data = await response.json();
 	var attributes = data.node[0].ATTRIBUTES.split('|');
-	var values = data.node[0].VALUES.split('|');
+	console.log(data.node);
+	var values = data.node[0].DATA.split('|');
 	var title = data.node[0].TYPE;
 
     const oldDiv = document.getElementById('infos');
@@ -58,17 +59,19 @@ document.addEventListener('DOMContentLoaded', function() {
 			};
 		});
 		const edges = data._edges.map(edge => {
-			var foundby = '(name)';
-			if (edge.byname == 'FALSE') foundby = '(ONB)';
+			var foundby = ' (name)';
+			if (edge.byname == 'FALSE') foundby = ' (ONB)';
 			return {
-				group: 'edges', data: {id: edge.id, source: edge.source, target: edge.target, inattr: edge.inattr, label: edge.inattr.substring(1) + ' ' + foundby}
+				group: 'edges', data: {id: edge.source + '_' + edge.target, source: edge.source, target: edge.target, inattr: edge.inattr, label: edge.inattr.substring(1) + foundby}
 			}
 		});
 		var cy = cytoscape({
 			container: document.getElementById('cy'), // container to render in
 
 			elements: {
-				nodes: nodes,
+				nodes: nodes
+				,
+				// edges: [{group: 'edges', data: {id: "1", source:"143484526541",target:"317250079341",inattr:":HISTORY", label:"toto"}}]
 				edges: edges
 			},
 
