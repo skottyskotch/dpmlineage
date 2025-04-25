@@ -4,6 +4,7 @@ async function fetchData(){
 	return data;
 }
 
+
 async function fetchNode(id){
 	const response = await fetch('http://localhost:3000/api/graph-data/node?ID='+id);
 	const data = await response.json();
