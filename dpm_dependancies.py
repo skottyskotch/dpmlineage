@@ -376,6 +376,7 @@ def browseObject():
 			ObjDependancy.showAll()
 			sys.exit(0)
 
+
 ######### search
 def searchDependanciesForOne(obj):
 	deps = []
