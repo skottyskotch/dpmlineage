@@ -4,14 +4,14 @@ pip install pandas
 pip install inquirer
 pip install rich
 pip install regex
+for the graph visualization feature:
 install node.js
 go in www
 npm install
  - use:
 download a dpm.gz
-put it into ./raws (create it if needed)
 dpm_extract ...dpm.gz
-	with -x: you will be prompted to exclude some tables, please do your selection.
+	with -x: you will be prompted to exclude some tables, please do your selection. The selection is stored in a text file in the current directory for further attempt.
 It will create the directory structure in ./output/DPM_OUT
 dpm_dependancies.py .../DMP_OUT
 	with -b: you will be prompted for a session browsing from object to callers
