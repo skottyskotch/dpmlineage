@@ -39,3 +39,12 @@ Il serait tres efficace de dresser un liste de classe qui peuvent être cherché
 (en fait là pour l'algo, c'est ne chercher dans les attributes settings que lors du scan de la classe USER ATTRIBUTE, ADDED ATTRIBUTE like. Et pour le coup ne chercher que le champ name de l'attribut dans le champ name du setting)
 
 Il faudrait arréter les dpm et faire ça directement en base
+
+graph improvement:
+ - nodes from same class are colored with a generated color, one color per class
+ - double click selects all nodes from the same class
+ - control click: multi selection
+ - way to cluster the selection
+ - allow the moving the cluster
+ - try other layout
+ - try a graph where nodes are tabldefinition, an edge is created if at least one edge between objects exists. The number of objects to objects edges is a label for this tabledef to tabledef edge
