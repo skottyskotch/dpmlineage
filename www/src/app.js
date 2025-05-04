@@ -49,6 +49,12 @@ async function fetchNode(id){
     document.getElementById('node-info').appendChild(newDiv);
 }
 
+async function fecthTabledef(){
+	const response = await fetch('http://localhost:3000/api/graph-data/tabledef');
+	const data = await response.json();
+	return data;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	fetchData().then(data => {
 		const nodes = data._nodes.map(node => {
@@ -64,14 +70,11 @@ document.addEventListener('DOMContentLoaded', function() {
 				group: 'edges', data: {id: edge.source + '_' + edge.target, source: edge.source, target: edge.target, inattr: edge.inattr, label: edge.inattr.substring(1) + foundby}
 			}
 		});
-		// cytoscape.use(window.cytoscapeFcose);
 		var cy = cytoscape({
 			container: document.getElementById('cy'), // container to render in
 
 			elements: {
-				nodes: nodes
-				,
-				// edges: [{group: 'edges', data: {id: "1", source:"143484526541",target:"317250079341",inattr:":HISTORY", label:"toto"}}]
+				nodes: nodes,
 				edges: edges
 			},
 
@@ -96,9 +99,9 @@ document.addEventListener('DOMContentLoaded', function() {
 						'curve-style': 'bezier'
 					}
 				}
-			]
-
-			,layout: {
+			],
+			
+			layout: {
 				name: 'breadthfirst',
 				fit: true, // whether to fit the viewport to the graph
 				directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
@@ -121,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 		});
 
-		cy.on('tap', 'node', function(evt){
+		cy.on('click', 'node', function(evt){
 			const clickedNode = evt.target;
 			cy.nodes().forEach(n => {
 				n.style({
@@ -166,6 +169,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				cy.layout({
 					name: 'fcose',
 					animate: false,
+					padding: 20,
 					nodeRepulsion: 100000,
 					idealEdgeLength: 250,
 					gravity: 0.01
@@ -178,7 +182,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					name: 'breadthfirst',
 					fit: true, // whether to fit the viewport to the graph
 					directed: false, // whether the tree is directed downwards (or edges can point in any direction if false)
-					padding: 30, // padding on fit
+					padding: 150, // padding on fit
 					circle: false, // put depths in concentric circles if true, put depths top down if false
 					grid: false, // whether to create an even grid into which the DAG is placed (circle:false only)
 					spacingFactor: 1.75, // positive spacing factor, larger => more space between nodes (N.B. n/a if causes overlap)
@@ -195,6 +199,58 @@ document.addEventListener('DOMContentLoaded', function() {
 					stop: undefined, // callback on layoutstop
 					transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts
 				}).run();
+			}
+			
+			if (key == '4') {
+				// cy.elements().remove();
+				fecthTabledef().then(data => {
+					const newNodes = data.nodes.map(node => {
+						return {
+							group: 'nodes', data: {"id": node.ID, "label": node.ID}
+						};
+					});
+					const newEdges = data.edges.map(edge => {
+						// console.log(edge);
+						return {
+							group: 'edges', data: {id: edge.SOURCE + '_' + edge.TARGET, source: edge.SOURCE, target: edge.TARGET, label: edge.number_of_edges}
+						}
+					});
+					cy = cytoscape({
+						container: document.getElementById('cy'), // container to render in
+						elements: {
+							nodes: newNodes
+							,
+							edges: newEdges
+						},
+						style: [
+							{
+								selector: 'node',
+								style: {
+									'background-color': '#666',
+									'label': 'data(label)',
+									'text-wrap': 'wrap'
+								}
+							},
+							{
+								selector: 'edge',
+								style: {
+									'width': 3,
+									'label': 'data(label)',
+									'edge-text-rotation': 'autorotate',
+									'line-color': '#ccc',
+									'target-arrow-color': '#ccc',
+									'target-arrow-shape': 'triangle',
+									'curve-style': 'bezier'
+								}
+							}
+						],
+
+						layout: {
+							name: 'circle',
+							padding: 100
+						}
+					});
+				});
 			}
 		});
 	});
