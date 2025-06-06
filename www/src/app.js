@@ -1,11 +1,23 @@
-async function fetchData(){
-	const response = await fetch('http://localhost:3000/api/graph-data');
+async function fetchDatabases(){
+    query = 'http://localhost:3000/api/database'
+    console.log(query);
+    const response = await fetch(query);
+    const data = await response.json();
+    return data;
+}
+
+async function fetchData(db){
+    const query = 'http://localhost:3000/api/graph-data?db=' + db;
+    console.log(query);
+	const response = await fetch(query);
 	const data = await response.json();
 	return data;
 }
 
 async function fetchNode(id){
-	const response = await fetch('http://localhost:3000/api/graph-data/node?ID='+id);
+    const query = 'http://localhost:3000/api/graph-data/node?ID='+id;
+    console.log(query);
+	const response = await fetch(query);
 	const data = await response.json();
 	var attributes = data.node[0].ATTRIBUTES.split('|');
 	var values = data.node[0].DATA.split('|');
@@ -56,7 +68,21 @@ async function fecthTabledef(){
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-	fetchData().then(data => {
+    fetchDatabases().then(data => {
+        const select = document.getElementById('database');
+        data.databases.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item;
+            option.textContent = item;
+            select.appendChild(option);
+        });
+    });
+    return false;
+});
+
+document.getElementById('run').addEventListener('click', () => {
+    const db = document.getElementById('database');
+	fetchData(db.value).then(data => {
 		const nodes = data._nodes.map(node => {
 			var sType = node.type.replace(/^[^:]*/,'');
 			return {
