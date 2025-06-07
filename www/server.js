@@ -1,10 +1,18 @@
 const express = require('express');
+const session = require('express-session');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const app = express();
 const port = 3000;
 
+app.use(express.urlencoded({ extended: true }));
+app.use(session({
+  secret: 'unSecretUltraSecret',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false } // mettre true si tu es en HTTPS
+}));
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/src', express.static(path.join(__dirname, 'src')));
@@ -27,10 +35,11 @@ fs.readdirSync(dbFolder).forEach(dbFile => {
 });
 
 app.get('/autre-page', (req, res) => {
-  res.send(`
-    <h1>Bienvenue sur l'autre page !</h1>
-    <a href="/">Retour à l'accueil</a>
-  `);
+	const selection = req.session.selection || 'Aucune sélection';
+	res.send(`
+		<p>Vous avez choisi : ${selection}</p>
+		<a href="/">Retour à l'accueil</a>
+	`);
 });
 
 // API endpoint for list available dbs
@@ -42,6 +51,7 @@ app.get('/api/database', (req, res) => {
 // API endpoint to fetch graph data
 app.get('/api/graph-data', (req, res) => {
     if (req.query.db) {
+		req.session.selection = req.query.db;
         if (hDatabases[req.query.db] != undefined) {
             var db = hDatabases[req.query.db];
             db.serialize(() => {
@@ -57,7 +67,8 @@ app.get('/api/graph-data', (req, res) => {
                         }
                         const _nodes = nodes.map(node => ({id: node.ID, type: node.TYPE}))
                         const _edges = edges.map(edge => ({id: edge.Id, source: edge.SOURCE, target: edge.TARGET, inattr: edge.INATTRIBUTE, byname: edge.byname}))
-                        res.json({_nodes,_edges});
+						const selectedDb = req.session.selection;
+                        res.json({selectedDb,_nodes,_edges});
                     });
                 });
             });
@@ -72,15 +83,28 @@ app.get('/api/graph-data', (req, res) => {
 });
 
 app.get('/api/graph-data/node', (req,res) => {
-	var sQuery = "SELECT ATTRIBUTES, VALUES, TYPE from nodes where ID = " + req.query.ID + ";";
-	db.all(sQuery, (err, node) => {
-		if (err) {
-			if (err.message = "SQLITE_ERROR: no such column: undefined") err.message += ". Valid request is like /api/graph-data/node?ID=...";
-			res.status(400).json({"error": err.message});
-			return;
+	if (req.query.db) {
+		req.session.selection = req.query.db;
+		if (hDatabases[req.query.db] != undefined) {
+			let db = hDatabases[req.query.db];
+			let sQuery = "SELECT ATTRIBUTES, \"VALUES\", TYPE from nodes where ID = " + req.query.id + ";";
+			db.all(sQuery, (err, node) => {
+				if (err) {
+					if (err.message = "SQLITE_ERROR: no such column: undefined") err.message += ". Valid request is like /api/graph-data/node?ID=...";
+					res.status(400).json({"error": err.message});
+					return;
+				}
+				const selectedDb = req.session.selection;
+				res.json({selectedDb,node});
+			});
 		}
-		res.json({node});
-	});
+        else{
+            res.json({"error":"database " +req.query.db + " not found"});
+        }
+    }
+    else {
+        res.json({"error":"Please request a database /api/graph-data?db=databasename.db&ID=nodeid"});
+    }
 });
 
 app.get('/api/graph-data/tabledef', (req,res) => {
@@ -102,6 +126,11 @@ app.get('/api/graph-data/tabledef', (req,res) => {
 			});
 		});
 	});
+});
+
+app.get('/api/databaseSelected', (req, res) => {
+	const selectedDb = req.session.selection;
+	res.json({selectedDb});
 });
 
 app.listen(port, () => {
