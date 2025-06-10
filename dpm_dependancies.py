@@ -267,7 +267,7 @@ def mapDirectories(filesPath, otherPath):
 						PlwFormat.instances[tableDefName].nb_objects += len(os.listdir(os.path.join(root,tableDefObjectDir)))
 
 def processExclusions(outputPath, main_directory):
-	exclusionFilePath = os.path.join(outputPath, main_directory + '_exclusion.txt')
+	exclusionFilePath = os.path.join(outputPath, main_directory + '_dpmdeps_exclusions.txt')
 	bLoadExclusions = False
 	classList = sorted(PlwFormat.instances.values(), key=lambda o: o.nb_objects, reverse=True)
 	choices = [(str(x.nb_objects).ljust(8) + x.name.decode('utf-8'),x) for x in classList]

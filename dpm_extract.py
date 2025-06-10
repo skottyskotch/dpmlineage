@@ -10,6 +10,7 @@ import inquirer # pip install inquirer
 from rich.progress import Progress # pip install rich
 import signal
 import copy
+import base64
 
 #######################################
 #	Function for dynamic classes
@@ -23,6 +24,12 @@ def init_object(self, plwFormat, tableDefColumns, dpmLine, cls):
 		obj_identifier = values[[x.ATT for x in tableDefColumns].index(cls.keyID)]
 	elif cls.keyID == b':BLOB':
 		obj_identifier = values[[x.ATT for x in tableDefColumns].index(cls.keyID)] + b'_' + values[[x.ATT for x in tableDefColumns].index(b':OFFSET')]
+		# decode :DATA from base85
+		data = values[[x.ATT for x in tableDefColumns].index(b':DATA')]
+		# try:
+		values[[x.ATT for x in tableDefColumns].index(b':DATA')] = base64.a85decode(values[[x.ATT for x in tableDefColumns].index(b':DATA')])
+		# except:
+			# values[[x.ATT for x in tableDefColumns].index(b':DATA')] = data
 	else:
 		obj_identifiers = []
 		for eachKey in cls.other_indexes:
@@ -74,7 +81,7 @@ def check_object_attribute(object, attribute):
 def print_object_attribute(object, attribute):
 # to refine
 	attribute_found = -1
-	columns=iter(object.columns)
+	columns=iter([col.ATT for col in object.plwFormat.columns])
 	values=iter(object.values)
 	for i in object.values:
 		if next(columns)[0][0] == attribute:
@@ -352,12 +359,28 @@ def Process_classes(dpm_text_bin):
 		cls = Dpm_objects_metaclass(my_format.table_def.decode('utf-8'), (DpmHeader,), class_methods, my_format)
 	print(str(len(PlwFormat.instances)) + ' format(s) instanciated')
 
-def processExclusions():
+def processExclusions(outputPath, main_directory):
+	exclusionFilePath = os.path.join(outputPath, main_directory + '_dpmextract_exclusions.txt')
+	bLoadExclusions = False
 	# Exclude types
 	classList = sorted(PlwFormat.instances.values(), key=lambda o: len(o.rawData), reverse=True)
-	dictTableDef = checkboxChooser('Class','Select classes to exclude',[(str(len(x.rawData)).ljust(8) + x.keyID.decode('utf-8').ljust(20) + x.name.decode('utf-8'),x) for x in classList])
+	choices = [(str(len(x.rawData)).ljust(8) + x.keyID.decode('utf-8').ljust(20) + x.name.decode('utf-8'),x) for x in classList]
+	default = []
+	if os.path.isfile(exclusionFilePath):
+		selection = listChooser('Exclusion','An exclusion file has been found. Load it?',['yes','no'])		
+		if selection['Exclusion'] == 'yes':
+			lines = []
+			with open(exclusionFilePath, 'r') as fexcl:
+				lines = [line.strip() for line in fexcl]
+			default = [PlwFormat.instances[line] for line in lines if line in PlwFormat.instances.keys() ]
+			rejected = [line for line in lines if line not in PlwFormat.instances.keys()]
+			if len(rejected) > 0:
+				print('Table definitions rejected (not found in the dpm): ' + ','.join(rejected))
+	dictTableDef = checkboxChooser('Class','Select classes to exclude', choices, default)
 	for plwFormat in dictTableDef['Class']:
 		del PlwFormat.instances[plwFormat.table_def.decode('utf-8')]
+	with open(exclusionFilePath, 'w') as fout:
+		fout.write('\n'.join([plwFormat.table_def.decode('utf-8') for plwFormat in dictTableDef['Class']]))
 	# Exclude files
 	# for plwFile in PlwFile.instances.values():
 		# plwFile.countObj()
@@ -558,6 +581,45 @@ def extract_objects(output_path):
 		# if all_object_in_class_have_a_name == 0:
 			# print(PlwFormat.instances[each_format].table_def, ' no onb, no extract')
 
+def manage_javascript():
+	dJS = {}
+	if '#%ARCHIVE:ENVIRONMENT-OBJECT:' in PlwFormat.instances.keys():
+		cEnvObj = PlwFormat.instances['#%ARCHIVE:ENVIRONMENT-OBJECT:']
+		jsRoots = []
+		jsElements = []
+		for obj in cEnvObj.objects:
+			rank = check_object_attribute(obj, b':FORMAT-DESCRIPTION')
+			if obj.values[rank].startswith(b'(#%JAVASCRIPT:JAVASCRIPT:'):
+				jsRoots.append(obj)
+			elif obj.values[rank] == b'359':
+				jsElements.append(obj)
+		for jsRoot in jsRoots:
+			rankONB = check_object_attribute(obj, b':OBJECT-NUMBER')
+			rootONB = jsRoot.values[rankONB]
+			dElts = {}
+			for jsElement in jsElements:
+				rankROOT = check_object_attribute(obj, b':ROOT')
+				if jsElement.values[rankROOT] == rootONB:
+					contentRank = check_object_attribute(obj, b':CONTENT')
+					offset = int(regex.split(b'\x0B',jsElement.values[contentRank])[-1].decode('utf-8'))
+					replacedby = regex.sub(b'^#4\x0B'+rootONB+b'\x0B',b'',jsElement.values[contentRank])
+					replacedby = regex.sub(b'!*\x0B[0-9]+$',b'',replacedby)
+					decoded = base64.a85decode(replacedby)
+					dElts[offset] = decoded;
+			dJS[jsRoot] = b''.join([value for (key,value) in sorted(dElts.items())])
+	
+		for each_object in dJS.keys():
+			objectdir = os.path.dirname(each_object.path)
+			scriptdir = os.path.join(objectdir,js_subdirectory)
+			if os.path.isdir(scriptdir) == False:
+				os.mkdir(scriptdir)
+			rankONB = check_object_attribute(each_object, b':OBJECT-NUMBER')
+			objectONB = each_object.values[rankONB].decode('UTF-8')
+			scriptPath = os.path.join(scriptdir,objectONB)
+			print(scriptPath)
+			with open(scriptPath, 'wb') as fout:
+				fout.write(dJS[each_object])
+
 def print_results(output_path):
 	# output_file = open(output_path, 'w', encoding = 'utf-8')
 	output_file = open(output_path, 'w', encoding = 'ISO-8859-1')
@@ -567,12 +629,13 @@ def print_results(output_path):
 	sys.stdout = saveout
 	output_file.close()
 
-def checkboxChooser(sKey, sQuestion, lList):
+def checkboxChooser(sKey, sQuestion, lChoices, lDefault):
     questions = [inquirer.Checkbox(
         sKey,
-        message=sQuestion,
-        choices=lList,
-        carousel=True
+        message = sQuestion,
+        choices = lChoices,
+		default = lDefault,
+        carousel = True
     )]
     answers = inquirer.prompt(questions)  # returns a dict
     return answers
@@ -611,37 +674,50 @@ def signal_handler(sig, frame):
     sys.exit(0)
 
 def main():
+	# exit gracefully
 	signal.signal(signal.SIGINT, signal_handler)
+	# arguments management
 	parser = argparse.ArgumentParser()
 	parser.add_argument("dpmFile", help="path/to/...dpm.gz")
 	parser.add_argument("-b", "--browse", action='store_true', help="Prompted for object visualisation")
 	parser.add_argument("-x", "--exclude", action='store_true', help="Prompted for selection of classes to exclude")
 	args = parser.parse_args()
 	
+	# read the input
 	outputPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'output')
 	dpmText = b''
 	with gzip.open(args.dpmFile, 'rb') as dpmFile:
 		dpmText = dpmFile.read()
+		
+	# instanciating header
 	myHeader = DpmHeader(dpmText,'Dpm1')
+	
+	# instanciating python classes for planisware classes
 	Process_classes(dpmText)
 	extractDataForFormat(dpmText,outputPath)
 	if args.exclude:
-		processExclusions()
+		processExclusions(outputPath, main_directory)
+		
+	# instanciating objects
 	Process_objects(dpmText, outputPath)
-	# Dpm_objects_metaclass.listMetaclass()
 	if args.browse:
 		browseObject()
 	# print('3-Create directory structure')
 	Create_directory_structure(outputPath, myHeader)
 	extract_headers(outputPath)
-    # print('4-Extract objects')
+	
+	manage_javascript()
+	return
+	
 	extract_objects(outputPath)
+	manage_javascript()
 				
-main_directory = 'DPM_OUT'
-files_subdirectory = 'FILES'
-data_subdirectory = 'DATA'
+main_directory 		= 'DPM_OUT'
+files_subdirectory 	= 'FILES'
+data_subdirectory 	= 'DATA'
 format_subdirectory = 'FORMAT'
 header_subdirectory = 'HEADER'
+js_subdirectory		= 'JS_L2'
 objects_without_file_directory = '#OTHERS'
 
 if __name__ == '__main__':
