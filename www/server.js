@@ -8,10 +8,10 @@ const port = 3000;
 
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
-  secret: 'unSecretUltraSecret',
+  secret: 'whatsthesecret?',
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: false } // mettre true si tu es en HTTPS
+  cookie: { secure: false }
 }));
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
@@ -34,7 +34,7 @@ fs.readdirSync(dbFolder).forEach(dbFile => {
     }
 });
 
-app.get('/autre-page', (req, res) => {
+app.get('/admin', (req, res) => {
 	const selection = req.session.selection || 'Aucune sélection';
 	res.send(`
 		<p>Vous avez choisi : ${selection}</p>
@@ -55,20 +55,20 @@ app.get('/api/graph-data', (req, res) => {
         if (hDatabases[req.query.db] != undefined) {
             var db = hDatabases[req.query.db];
             db.serialize(() => {
-                db.all(sQueryNodes, (err, nodes) => {
+                db.all(sQueryNodes, (err, _nodes) => {
                     if (err) {
                         res.status(400).json({"error": err.message});
                         return;
                     }
-                    db.all(sQueryEdges, (err, edges) => {
+                    db.all(sQueryEdges, (err, _edges) => {
                         if (err) {
                             res.status(400).json({"error": err.message});
                             return;
                         }
-                        const _nodes = nodes.map(node => ({id: node.ID, type: node.TYPE}))
-                        const _edges = edges.map(edge => ({id: edge.Id, source: edge.SOURCE, target: edge.TARGET, inattr: edge.INATTRIBUTE, byname: edge.byname}))
+                        const nodes = _nodes.map(node => ({id: node.ID, type: node.TYPE}))
+                        const edges = _edges.map(edge => ({id: edge.Id, source: edge.SOURCE, target: edge.TARGET, inattr: edge.INATTRIBUTE, byname: edge.byname}))
 						const selectedDb = req.session.selection;
-                        res.json({selectedDb,_nodes,_edges});
+                        res.json({selectedDb,nodes,edges});
                     });
                 });
             });
@@ -83,6 +83,7 @@ app.get('/api/graph-data', (req, res) => {
 });
 
 app.get('/api/graph-data/node', (req,res) => {
+	console.log(req.query.db);
 	if (req.query.db) {
 		req.session.selection = req.query.db;
 		if (hDatabases[req.query.db] != undefined) {
@@ -108,24 +109,33 @@ app.get('/api/graph-data/node', (req,res) => {
 });
 
 app.get('/api/graph-data/tabledef', (req,res) => {
-	db.serialize(() => {
-		db.all(sQueryTabledefNodes, (err, nodes) => {
-			if (err) {
-				res.status(400).json({"error nodes": err.message});
-				return;
-			}
-			db.all(sQueryTabledefEdges, (err, edges) => {
-				if (err) {
-					res.status(400).json({"error edges": err.message});
-					return;
-				}
-				const _nodes = nodes.map(node => ({id: node.ID}))
-				const _edges = edges.map(edge => ({id: edge.Id, source: edge.SOURCE, target: edge.TARGET}))
-				// const _edges = edges.map(edge => ({source: edge.SOURCE, target: edge.TARGET}))
-				res.json({nodes, edges});
+	if (req.query.db) {
+		req.session.selection = req.query.db;
+		if (hDatabases[req.query.db] != undefined) {
+			let db = hDatabases[req.query.db];
+			db.serialize(() => {
+				db.all(sQueryTabledefNodes, (err, nodes) => {
+					if (err) {
+						res.status(400).json({"error nodes": err.message});
+						return;
+					}
+					db.all(sQueryTabledefEdges, (err, edges) => {
+						if (err) {
+							res.status(400).json({"error edges": err.message});
+							return;
+						}
+						const _nodes = nodes.map(node => ({id: node.ID}))
+						const _edges = edges.map(edge => ({id: edge.Id, source: edge.SOURCE, target: edge.TARGET}))
+						// const _edges = edges.map(edge => ({source: edge.SOURCE, target: edge.TARGET}))
+						res.json({nodes, edges});
+					});
+				});
 			});
-		});
-	});
+		}
+	}
+    else {
+        res.json({"error":"Please request a database /api/graph-data/tabledef?db=databasename"});
+    }
 });
 
 app.get('/api/databaseSelected', (req, res) => {
