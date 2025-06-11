@@ -1,6 +1,6 @@
 let cy;
 const dbSelector = document.getElementById('dbSelector');
-// const tableSelector = document.getElementById('tableSelector');
+const tableSelector = document.getElementById('tableSelector');
 
 async function retrieveDbFromSession(){
     query = 'http://localhost:3000/api/databaseSelected'
@@ -21,6 +21,14 @@ async function fetchDatabases(){
 async function fetchData(db){
     const query = 'http://localhost:3000/api/graph-data?db=' + db;
     console.log(query);
+	const response = await fetch(query);
+	const data = await response.json();
+	return data;
+}
+
+async function fecthTabledef(db){
+	query = 'http://localhost:3000/api/graph-data/tabledef?db=' + db;
+	console.log(query);
 	const response = await fetch(query);
 	const data = await response.json();
 	return data;
@@ -73,14 +81,6 @@ async function fetchNode(db,id){
     document.getElementById('node-info').appendChild(newDiv);
 }
 
-async function fecthTabledef(db){
-	query = 'http://localhost:3000/api/graph-data/tabledef?db=' + db;
-	console.log(query);
-	const response = await fetch(query);
-	const data = await response.json();
-	return data;
-}
-
 document.addEventListener('DOMContentLoaded', function() {
 	dbSelector.addEventListener('change', (event) => {
 		const selectedValue = event.target.value;
@@ -94,10 +94,12 @@ document.addEventListener('DOMContentLoaded', function() {
             dbSelector.appendChild(option);
         });
     });
-	retrieveDbFromSession().then(data => {
-		if (data.selectedDb) dbSelector.value = data.selectedDb;
-	}).then(data => {
-		if (dbSelector.value != "") fetchData(dbSelector.value).then(data => buildGraph(data, "a"));
+	retrieveDbFromSession()
+	.then(data => {if (data.selectedDb) dbSelector.value = data.selectedDb;})
+	.then(data => {
+		if (dbSelector.value != "") fetchData(dbSelector.value).then(data => {
+			if (cy == undefined) buildGraph(data);
+		});
 	})
 	
 	document.addEventListener('keydown', (event) => {
@@ -195,13 +197,18 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	});
 	document.getElementById('run').addEventListener('click', () => {
-		fetchData(dbSelector.value).then(data => buildGraph(data, "b"));
+		fecthTabledef(dbSelector.value).then(data => {
+			data.nodes.forEach(item => {
+				const option = document.createElement('option');
+				option.value = item.ID;
+				option.textContent = item.ID + " (" + item.OBJECTS + ")";
+				tableSelector.appendChild(option);
+			});
+		}).then(() => fetchData(dbSelector.value)).then(data => buildGraph(data));
 	});
 });
 
-
-function buildGraph(data, param) {
-	// console.log(param);
+function buildGraph(data) {
 	const nodes = data.nodes.map(node => {
 		var sType = node.type.replace(/^[^:]*/,'');
 		return {
@@ -279,17 +286,17 @@ function buildGraph(data, param) {
 			});
 		});
 		clickedNode.style({
-			'background-color': 'red',
+			'background-color': '#d2268c',
 			'width': 50,
 			'height': 50
 		});
-		const incomingNodes = clickedNode.incomers('edge').sources();
+		// const incomingNodes = clickedNode.incomers('edge').sources();
+		const incomingNodes = clickedNode.outgoers('edge').targets();
 		lastSelectedNode = clickedNode;
 		incomingNodes.forEach(node => {
 			node.style('background-color', '#ff9999');
 		});
-		const db = document.getElementById('database');
-		fetchNode(db.value,this.id());
+		fetchNode(dbSelector.value,this.id());
 	});
 	
 	// to finish
@@ -307,3 +314,32 @@ function buildGraph(data, param) {
 		});
 	});
 }
+
+
+let state = 0;
+const toggleEl = document.getElementById('toggle');
+
+function updateToggleLabel() {
+  toggleEl.classList.remove('state-0', 'state-1', 'state-2');
+  toggleEl.classList.add(`state-${state}`);
+  
+  const labels = ['Incomers', 'Outgoers', 'Reset'];
+  toggleEl.textContent = labels[state];
+}
+
+toggleEl.addEventListener('click', () => {
+  state = (state + 1) % 3;
+  updateToggleLabel();
+
+  if (selectedNode) {
+    cy.elements().removeClass('highlighted');
+    if (state === 0) {
+      selectedNode.incomers().addClass('highlighted');
+    } else if (state === 1) {
+      selectedNode.outgoers().addClass('highlighted');
+    }
+    // state 2 = reset, no highlighting
+  }
+});
+
+updateToggleLabel(); // init

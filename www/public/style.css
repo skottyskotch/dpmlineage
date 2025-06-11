@@ -51,3 +51,23 @@ html, body {
 	margin-top: 10px;
 	background-color: #f0f0f0;
 }
+.tri-toggle {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #ddd;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-weight: bold;
+  transition: background-color 0.3s;
+}
+
+.tri-toggle.state-0 {
+  background-color: #ffcc00; /* Incomers */
+}
+.tri-toggle.state-1 {
+  background-color: #66ccff; /* Outgoers */
+}
+.tri-toggle.state-2 {
+  background-color: #ccc;     /* Reset */
+}

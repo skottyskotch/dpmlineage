@@ -6,6 +6,12 @@ const fs = require('fs');
 const app = express();
 const port = 3000;
 
+function format(str, ...values) {
+  return str.replace(/{(\d+)}/g, function(match, index) {
+    return typeof values[index] !== 'undefined' ? values[index] : match;
+  });
+}
+
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
   secret: 'whatsthesecret?',
@@ -13,16 +19,21 @@ app.use(session({
   saveUninitialized: true,
   cookie: { secure: false }
 }));
+
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/src', express.static(path.join(__dirname, 'src')));
 
 // useful db queries for apis
+var depth = 1;
+var tableDefFilter = "#%TEMP-TABLE:_SC_PT_REPORTING:";
 var sSampleQueryNodes = "SELECT ID, TYPE from nodes limit 500";
 var sSampleQueryEdges = "with cte as (select * from nodes limit 500) select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges a join cte b on a.source = b.id join cte c on a.target = c.id;";
-var sQueryNodes = "with recursive subgraph(id, depth) as (select id, 0 from nodes where type = '#%TEMP-TABLE:_SC_PT_REPORTING:'	union all select edges.source, subgraph.depth + 1 from edges join subgraph on edges.target = subgraph.id where subgraph.depth < 2)select ID, TYPE from nodes where id in (select id from subgraph);";
-var sQueryEdges = "with recursive subgraph(id, depth) as (select id, 0 from nodes where type = '#%TEMP-TABLE:_SC_PT_REPORTING:' union all select edges.source, subgraph.depth + 1 from edges join subgraph on edges.target = subgraph.id where subgraph.depth < 2),cte_node as (select ID from nodes where id in (select id from subgraph))select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where source in (select * from cte_node) and target in (select * from cte_node);";
-var sQueryTabledefNodes = "select ID from TABLEDEF;";
+// var sQueryNodes = "with recursive subgraph(id, depth) as (select id, 0 from nodes where type = '{0}' union all select edges.source, subgraph.depth + 1 from edges join subgraph on edges.target = subgraph.id where subgraph.depth < {1})select ID, TYPE from nodes where id in (select id from subgraph);";
+var sQueryNodes = "select ID, TYPE from nodes where type = '#%TEMP-TABLE:_SC_PT_REPORTING:';";
+// var sQueryEdges = "with recursive subgraph(id, depth) as (select id, 0 from nodes where type = '{0}' union all select edges.source, subgraph.depth + 1 from edges join subgraph on edges.target = subgraph.id where subgraph.depth < {1}),cte_node as (select ID from nodes where id in (select id from subgraph))select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where source in (select * from cte_node) and target in (select * from cte_node);";
+var sQueryEdges = "with cte as (select ID, TYPE from nodes where type = '{0}') select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where SOURCE in (select ID from cte) and TARGET in (select ID from cte);";
+var sQueryTabledefNodes = "select ID, OBJECTS from TABLEDEF;";
 // var sQueryTabledefEdges = "select distinct d.id as SOURCE, e.id as TARGET, count(*) as number_of_edges from edges a join nodes b on a.source =b.id join nodes c on a.target = c.id join tabledef d on b.type = d.id join tabledef e on c.type = e.id group by d.id, e.id order by count(*) desc;";
 var sQueryTabledefEdges = "with cte as (select distinct d.id as source, e.id as target , count(*) as number_of_edges  from edges a join nodes b on a.source =b.id join nodes c on a.target = c.id join tabledef d on b.type = d.id join tabledef e on c.type = e.id group by d.id, e.id), sumcte as (select cte.source, sum(number_of_edges) as number_of_connections from cte group by source) select cte.source as SOURCE, cte.target as TARGET, cte.number_of_edges as number_of_edges, sumcte.number_of_connections from cte left join sumcte on cte.source = sumcte.source order by number_of_connections desc;";
 
@@ -33,6 +44,12 @@ fs.readdirSync(dbFolder).forEach(dbFile => {
         hDatabases[dbFile] = new sqlite3.Database(dbFolder + '/' + dbFile);
     }
 });
+
+function format(str, ...values) {
+  return str.replace(/{(\d+)}/g, function(match, index) {
+    return typeof values[index] !== 'undefined' ? values[index] : match;
+  });
+}
 
 app.get('/admin', (req, res) => {
 	const selection = req.session.selection || 'Aucune sélection';
@@ -55,12 +72,14 @@ app.get('/api/graph-data', (req, res) => {
         if (hDatabases[req.query.db] != undefined) {
             var db = hDatabases[req.query.db];
             db.serialize(() => {
-                db.all(sQueryNodes, (err, _nodes) => {
+				const sQuery1 = format(sQueryNodes,tableDefFilter,depth);
+                db.all(sQuery1, (err, _nodes) => {
                     if (err) {
                         res.status(400).json({"error": err.message});
                         return;
                     }
-                    db.all(sQueryEdges, (err, _edges) => {
+					const sQuery2 = format(sQueryEdges,tableDefFilter,depth);
+                    db.all(sQuery2, (err, _edges) => {
                         if (err) {
                             res.status(400).json({"error": err.message});
                             return;
@@ -83,7 +102,6 @@ app.get('/api/graph-data', (req, res) => {
 });
 
 app.get('/api/graph-data/node', (req,res) => {
-	console.log(req.query.db);
 	if (req.query.db) {
 		req.session.selection = req.query.db;
 		if (hDatabases[req.query.db] != undefined) {
@@ -124,7 +142,7 @@ app.get('/api/graph-data/tabledef', (req,res) => {
 							res.status(400).json({"error edges": err.message});
 							return;
 						}
-						const _nodes = nodes.map(node => ({id: node.ID}))
+						const _nodes = nodes.map(node => ({id: node.ID, objects: nodes.OBJECTS}))
 						const _edges = edges.map(edge => ({id: edge.Id, source: edge.SOURCE, target: edge.TARGET}))
 						// const _edges = edges.map(edge => ({source: edge.SOURCE, target: edge.TARGET}))
 						res.json({nodes, edges});
