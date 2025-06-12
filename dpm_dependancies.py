@@ -17,6 +17,7 @@ files_subdirectory = 'FILES'
 data_subdirectory = 'DATA'
 format_subdirectory = 'FORMAT'
 header_subdirectory = 'HEADER'
+js_subdirectory		= 'JS_L2'
 objects_without_file_directory = '#OTHERS'
 
 ### utils
@@ -149,6 +150,9 @@ class PlwObject:
 		self.callers = []
 		self.values = []
 		self.id = b'NIL'
+		self.js2 = b''
+		self.functions = []
+		self.methods = []
 		self.name = b''
 		self.onb = b''
 		tableDefColumns = self.format.columns
@@ -189,12 +193,13 @@ class PlwObject:
 
 class ObjDependancy:
 	instances = []
-	def __init__(self, obj1, obj2, col, calledByOnb):
+	def __init__(self, obj1, obj2, col, calledByOnb, functionName):
 		# obj1 is called by obj2
 		self.left = obj1
 		self.right = obj2
 		self.column = col
 		self.calledByOnb = calledByOnb # False = left by the name
+		self.functionName = functionName # called by a function or method (function / method name)
 		ObjDependancy.instances.append(self)
 
 	def show(self):
@@ -300,12 +305,23 @@ def processObjectsWithFiles(filesPath):
 				for dirType in os.listdir(os.path.join(filesPath,dirFile)):
 					if dirType in [regex.sub(r'[:\?\*<>\|]','_', x) for x in PlwFormat.instances.keys()]:
 						for fileObject in os.listdir(os.path.join(dirType,filesPath,dirFile,dirType)):
-							pathList.append(os.path.join(dirType,filesPath,dirFile,dirType,fileObject))
+							pathList.append(os.path.join(dirType, filesPath, dirFile,dirType,fileObject))
 		with Progress() as progress:
 			main_task = progress.add_task("[cyan]Processing objects with dataset...", total = len(pathList))
 			for file in pathList:
 				progress.advance(main_task, 1)
-				PlwObject(file)
+				if os.path.basename(os.path.dirname(file)) != js_subdirectory:
+					PlwObject(file)
+
+def processJS():
+	js2Script = {}
+	if os.path.isdir(jsPath):
+		for jsFile in os.listdir(jsPath):
+			with open(jsPath, 'rb') as fin:
+				js2Script[file.name] = fin.read()
+			for obj in PlwFormat.instances['#%ARCHIVE:ENVIRONMENT-OBJECT:'].objects:
+				if obj.id in js2Script:
+					obj.js2 = js2Script[obj.id]
 
 def processObjectsWithoutFiles(otherPath):
 	pathList = []
@@ -318,7 +334,8 @@ def processObjectsWithoutFiles(otherPath):
 			main_task = progress.add_task("[cyan]Processing objects without dataset...", total = len(pathList))
 			for file in pathList:
 				progress.advance(main_task, 1)
-				PlwObject(file)
+				if os.path.basename(os.path.dirname(file)) != js_subdirectory:
+					PlwObject(file)
 
 def browseObject():
 	displayedListHistory = []
@@ -418,7 +435,42 @@ def indexDependancies(globalIndex):
 								globalIndex[obj.id].append(otherObj)
 							if obj.format.searchedByNAME and obj.name in otherObj.valuesConcat:
 								globalIndex[obj.id].append(otherObj)
+							if otherObj.js2 != b'' and not otherObj in globalIndex[obj.id] and obj.name in otherObj.js2:
+								globalIndex[obj.id].append(otherObj)
 				progress.update(main_task, description = "[cyan]Object indexation " + str(i) + "/" + str(len(PlwObject.instances)) + ". Found " + str(len(globalIndex.keys())) + " objects called by other(s)...", advance = 1)
+
+def indexFunctions(globalIndex):
+	jsObjects = []
+	functions = []
+	methods = []
+	for obj in PlwFormat.instances['#%ARCHIVE:ENVIRONMENT-OBJECT:'].objects:
+		if obj.js2 != b'':
+			jsObjects.append(obj)
+	with Progress() as progress:
+		main_task = progress.add_task("[cyan]Functions parsing...", total = len(jsObjects))
+		for obj in jsObjects:
+			regexp = regex.compile(b'^\s*function\s+([^\(]+)\(')
+			obj.functions = regexp.findall(obj.js2)
+			regexp = regex.compile(b'^\s*method\s+([^\(]+) on')
+			obj.methods = regexp.findall(obj.js2)
+	with Progress() as progress:
+		i=0
+		main_task = progress.add_task("[cyan]Functions indexation...", total = len(jsObjects))
+		for plwFormat in PlwFormat.instances.values():
+			for jsObj in jsObjects:
+				i+=1
+				for otherPlwFormat in PlwFormat.instances.values():
+					if plwFormat.table_def == b'#%TEMP-TABLE:_ATV_PT_ATT_VAL:' and otherPlwFormat.table_def == b'#%TEMP-TABLE:_ATV_PT_ATT_VAL:':
+						continue
+					for otherObj in otherPlwFormat.objects:
+						if otherObj != jsObj:
+							for function in jsObj.functions:
+								if function in otherObj.valuesConcat:
+									globalIndex[jsObj.id].append(otherObj)
+							for method in jsObj.methods:
+								if method in otherObj.valuesConcat:
+									globalIndex[jsObj.id].append(otherObj)
+				progress.update(main_task, description = "[cyan]Functions indexation " + str(i) + "/" + str(len(jsObjects)) + ". Found " + str(len(globalIndex.keys())) + " functions called in other objects...", advance = 1)
 
 def processDepLinks(globalIndex):
 	with Progress() as progress:
@@ -429,12 +481,12 @@ def processDepLinks(globalIndex):
 				for caller in callers:
 					for attribute, value in caller.attributes.items():
 						if obj.onb in value:
-							ObjDependancy(obj, caller, attribute, True)
+							ObjDependancy(obj, caller, attribute, True, '')
 			if obj.format.searchedByNAME:
 				for caller in callers:
 					for attribute, value in caller.attributes.items():
 						if obj.name in value:
-							ObjDependancy(obj, caller, attribute, False)
+							ObjDependancy(obj, caller, attribute, False, '')
 			progress.advance(main_task, 1)
 
 ### dump csv
@@ -569,7 +621,6 @@ def prepareNodesAndInsert(db_connection, cursor, batchSize=1000):
 				objValues.clear()
 				db_connection.commit()
 			progress.advance(main_task, 1)
-		print(objName)
 		if objId:
 			rows = list(zip(objId, objName, objType, objAttributes, objValues))
 			insertBatch(cursor, 'nodes', rows, ['ID', 'NAME', 'TYPE', 'ATTRIBUTES', 'DATA'])
@@ -626,11 +677,12 @@ def main():
 	inputPath = args.directory
 	formatPath = ''
 	filesPath = ''
+	jsPath = ''
 	main_directory = os.path.basename(inputPath)
 	outputPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'output')
 	if not os.path.exists(outputPath):
 		os.makedirs(outputPath)
-	
+
 	if os.path.isdir(inputPath) and main_directory not in os.path.basename(inputPath):
 		print(args.directory + ' is not a base directory of an extracted dpm (.../' + main_directory + ')')
 		return
@@ -638,9 +690,9 @@ def main():
 	for root, dirs, files in os.walk(inputPath):
 		if format_subdirectory in dirs and files_subdirectory in dirs:
 			formatPath = os.path.join(inputPath,format_subdirectory)
-			print(formatPath)
 			filesPath = os.path.join(inputPath,files_subdirectory)
 			otherPath = os.path.join(inputPath,files_subdirectory,objects_without_file_directory)
+			jsPath = os.path.join(inputPath,js_subdirectory)
 			break
 	processFormats(formatPath)
 	if args.exclude:
@@ -651,7 +703,7 @@ def main():
 		browseObject()
 	globalIndex = defaultdict(list)
 	indexDependancies(globalIndex)
-	# parallelIndexation(globalIndex) # to be tested
+	indexFunctions(globalIndex)
 	processDepLinks(globalIndex)
 	if os.path.isdir(outputPath):
 		if args.mode == 'csv':

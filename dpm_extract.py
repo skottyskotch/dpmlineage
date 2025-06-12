@@ -48,8 +48,6 @@ def init_object(self, plwFormat, tableDefColumns, dpmLine, cls):
 	self.directory = ''
 	cls.instances.append(self)
 	self.id = obj_identifier
-	if self.id == b'143484653672_0':
-		print(self.values)
 	self.filename = filename
 	if cls.name in ['#%DATABASE-IO:USER-PARAMETER:']:
 	# pdf, doc and thumbnail filenames are  managed by checksum, not increment anymore
@@ -584,7 +582,7 @@ def extract_objects(output_path):
 		# if all_object_in_class_have_a_name == 0:
 			# print(PlwFormat.instances[each_format].table_def, ' no onb, no extract')
 
-def manage_javascript():
+def manage_javascript(outputPath):
 	dJS = {}
 	if '#%ARCHIVE:ENVIRONMENT-OBJECT:' in PlwFormat.instances.keys():
 		cEnvObj = PlwFormat.instances['#%ARCHIVE:ENVIRONMENT-OBJECT:']
@@ -612,14 +610,12 @@ def manage_javascript():
 			dJS[jsRoot] = b''.join([value for (key,value) in sorted(dElts.items())])
 	
 		for each_object in dJS.keys():
-			objectdir = os.path.dirname(each_object.path)
-			scriptdir = os.path.join(objectdir,js_subdirectory)
+			scriptdir = os.path.join(outputPath, main_directory, js_subdirectory)
 			if os.path.isdir(scriptdir) == False:
 				os.mkdir(scriptdir)
 			rankONB = check_object_attribute(each_object, b':OBJECT-NUMBER')
 			objectONB = each_object.values[rankONB].decode('UTF-8')
 			scriptPath = os.path.join(scriptdir,objectONB)
-			print(scriptPath)
 			with open(scriptPath, 'wb') as fout:
 				fout.write(dJS[each_object])
 
@@ -710,7 +706,7 @@ def main():
 	extract_headers(outputPath)
 	
 	extract_objects(outputPath)
-	manage_javascript()
+	manage_javascript(outputPath)
 				
 main_directory 		= 'DPM_OUT'
 files_subdirectory 	= 'FILES'
