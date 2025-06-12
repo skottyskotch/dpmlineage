@@ -30,7 +30,7 @@ var tableDefFilter = "#%TEMP-TABLE:_SC_PT_REPORTING:";
 var sSampleQueryNodes = "SELECT ID, TYPE from nodes limit 500";
 var sSampleQueryEdges = "with cte as (select * from nodes limit 500) select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges a join cte b on a.source = b.id join cte c on a.target = c.id;";
 // var sQueryNodes = "with recursive subgraph(id, depth) as (select id, 0 from nodes where type = '{0}' union all select edges.source, subgraph.depth + 1 from edges join subgraph on edges.target = subgraph.id where subgraph.depth < {1})select ID, TYPE from nodes where id in (select id from subgraph);";
-var sQueryNodes = "select ID, TYPE from nodes where type = '#%TEMP-TABLE:_SC_PT_REPORTING:';";
+var sQueryNodes = "select ID, NAME, TYPE from nodes where type = '#%TEMP-TABLE:_SC_PT_REPORTING:';";
 // var sQueryEdges = "with recursive subgraph(id, depth) as (select id, 0 from nodes where type = '{0}' union all select edges.source, subgraph.depth + 1 from edges join subgraph on edges.target = subgraph.id where subgraph.depth < {1}),cte_node as (select ID from nodes where id in (select id from subgraph))select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where source in (select * from cte_node) and target in (select * from cte_node);";
 var sQueryEdges = "with cte as (select ID, TYPE from nodes where type = '{0}') select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where SOURCE in (select ID from cte) and TARGET in (select ID from cte);";
 var sQueryTabledefNodes = "select ID, OBJECTS from TABLEDEF;";
@@ -84,7 +84,7 @@ app.get('/api/graph-data', (req, res) => {
                             res.status(400).json({"error": err.message});
                             return;
                         }
-                        const nodes = _nodes.map(node => ({id: node.ID, type: node.TYPE}))
+                        const nodes = _nodes.map(node => ({id: node.ID, name: node.NAME, type: node.TYPE}))
                         const edges = _edges.map(edge => ({id: edge.Id, source: edge.SOURCE, target: edge.TARGET, inattr: edge.INATTRIBUTE, byname: edge.byname}))
 						const selectedDb = req.session.selection;
                         res.json({selectedDb,nodes,edges});
@@ -106,7 +106,7 @@ app.get('/api/graph-data/node', (req,res) => {
 		req.session.selection = req.query.db;
 		if (hDatabases[req.query.db] != undefined) {
 			let db = hDatabases[req.query.db];
-			let sQuery = "SELECT ATTRIBUTES, \"VALUES\", TYPE from nodes where ID = " + req.query.id + ";";
+			let sQuery = "SELECT ATTRIBUTES, DATA, TYPE from nodes where ID = " + req.query.id + ";";
 			db.all(sQuery, (err, node) => {
 				if (err) {
 					if (err.message = "SQLITE_ERROR: no such column: undefined") err.message += ". Valid request is like /api/graph-data/node?ID=...";

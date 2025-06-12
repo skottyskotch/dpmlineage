@@ -28,6 +28,7 @@ def init_object(self, plwFormat, tableDefColumns, dpmLine, cls):
 		data = values[[x.ATT for x in tableDefColumns].index(b':DATA')]
 		# try:
 		values[[x.ATT for x in tableDefColumns].index(b':DATA')] = base64.a85decode(values[[x.ATT for x in tableDefColumns].index(b':DATA')])
+		values = [value.replace(b'\n',b'') for value in values]
 		# except:
 			# values[[x.ATT for x in tableDefColumns].index(b':DATA')] = data
 	else:
@@ -47,6 +48,8 @@ def init_object(self, plwFormat, tableDefColumns, dpmLine, cls):
 	self.directory = ''
 	cls.instances.append(self)
 	self.id = obj_identifier
+	if self.id == b'143484653672_0':
+		print(self.values)
 	self.filename = filename
 	if cls.name in ['#%DATABASE-IO:USER-PARAMETER:']:
 	# pdf, doc and thumbnail filenames are  managed by checksum, not increment anymore
@@ -705,9 +708,6 @@ def main():
 	# print('3-Create directory structure')
 	Create_directory_structure(outputPath, myHeader)
 	extract_headers(outputPath)
-	
-	manage_javascript()
-	return
 	
 	extract_objects(outputPath)
 	manage_javascript()

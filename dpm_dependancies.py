@@ -485,6 +485,7 @@ def createNodesTable(conn):
 	query = '''
 	CREATE TABLE IF NOT EXISTS nodes (
 		ID TEXT,
+		NAME TEXT,
 		TYPE TEXT,
 		ATTRIBUTES TEXT,
 		DATA TEXT
@@ -546,6 +547,7 @@ def prepareEdgesAndInsert(db_connection, cursor, batchSize=10000):
 
 def prepareNodesAndInsert(db_connection, cursor, batchSize=1000):
 	objId = []
+	objName = []
 	objType = []
 	objAttributes = []
 	objValues = []
@@ -553,21 +555,24 @@ def prepareNodesAndInsert(db_connection, cursor, batchSize=1000):
 		main_task = progress.add_task('[cyan]Inserting nodes in database...', total=len(PlwObject.instances))
 		for obj in PlwObject.instances.values():
 			objId.append(obj.id.decode('utf-8'))
+			objName.append(obj.name.decode('utf-8'))
 			objType.append(obj.format.table_def.decode('utf-8'))
 			objAttributes.append('|'.join([x.decode('utf-8') for x in obj.attributes.keys()]))
 			objValues.append('|'.join([x.decode('utf-8', errors='replace') for x in obj.attributes.values()]))
 			if len(objId) >= batchSize:
-				rows = list(zip(objId, objType, objAttributes, objValues))
-				insertBatch(cursor, 'nodes', rows, ['ID', 'TYPE', 'ATTRIBUTES', 'DATA'])
+				rows = list(zip(objId, objName, objType, objAttributes, objValues))
+				insertBatch(cursor, 'nodes', rows, ['ID', 'NAME', 'TYPE', 'ATTRIBUTES', 'DATA'])
 				objId.clear()
+				objName.clear()
 				objType.clear()
 				objAttributes.clear()
 				objValues.clear()
 				db_connection.commit()
 			progress.advance(main_task, 1)
+		print(objName)
 		if objId:
-			rows = list(zip(objId, objType, objAttributes, objValues))
-			insertBatch(cursor, 'nodes', rows, ['ID', 'TYPE', 'ATTRIBUTES', 'DATA'])
+			rows = list(zip(objId, objName, objType, objAttributes, objValues))
+			insertBatch(cursor, 'nodes', rows, ['ID', 'NAME', 'TYPE', 'ATTRIBUTES', 'DATA'])
 			db_connection.commit()
 
 def dumpTablesToDB(main_directory, outputPath):

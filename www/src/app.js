@@ -2,6 +2,7 @@ let cy;
 const dbSelector = document.getElementById('dbSelector');
 const tableSelector = document.getElementById('tableSelector');
 let clickedNode;
+let clickedNodeFamily = [];
 let state = 0;
 const toggleEl = document.getElementById('toggle');
 
@@ -45,7 +46,7 @@ async function fetchNodeForInfo(db,id){ // retrieve a single node to display inf
 	const response = await fetch(query);
 	const data = await response.json();
 	var attributes = data.node[0].ATTRIBUTES.split('|');
-	var values = data.node[0].VALUES.split('|');
+	var values = data.node[0].DATA.split('|');
 	var title = data.node[0].TYPE;
 
     const oldDiv = document.getElementById('infos');
@@ -70,13 +71,9 @@ async function fetchNodeForInfo(db,id){ // retrieve a single node to display inf
         value.textContent = values[i];
 		value.classList.add(`kv-${attributes[i]}`.replace(':',''));
 		
-		if (attributes[i] === ':NAME') {
-            key.classList.add('highlight-green');
-            value.classList.add('highlight-green');
-        }
-		if (attributes[i] === ':OBJECT-NUMBER') {
-            key.classList.add('highlight-blue');
-            value.classList.add('highlight-blue');
+		if (attributes[i] === ':NAME' || attributes[i] === ':OBJECT-NUMBER') {
+            key.classList.add('highlight-yellow');
+            value.classList.add('highlight-yellow');
         }
         newDiv.appendChild(key);
         newDiv.appendChild(value);
@@ -87,8 +84,8 @@ async function fetchNodeForInfo(db,id){ // retrieve a single node to display inf
 }
 
 // ******* UI functions
-// toggle color targets/sources
 
+// toggle color targets/sources
 function colorNodesOnClick(){
 	if (cy && clickedNode) {
 		cy.nodes().forEach(n => {
@@ -151,7 +148,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	.then(data => {if (data.selectedDb) dbSelector.value = data.selectedDb;})
 	.then(data => {
 		if (dbSelector.value != "") fetchData(dbSelector.value).then(data => {
-			if (cy == undefined) buildGraph(data);
+			if (cy == undefined) buildGraph(data,'objectGraph');
 		});
 		updateToggleLabel();// toggle coloration of nodes connected to the clicked one (sources/both/target)
 	})
@@ -214,8 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
 					cy = cytoscape({
 						container: document.getElementById('cy'), // container to render in
 						elements: {
-							nodes: newNodes
-							,
+							nodes: newNodes,
 							edges: newEdges
 						},
 						style: [
@@ -262,23 +258,46 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 });
 
-function buildGraph(data) {
-	const nodes = data.nodes.map(node => {
-		var sType = node.type.replace(/^[^:]*/,'');
-		return {
-			group: 'nodes', data: {id: node.id, label: node.id+"\n"+node.type.replace(/^[^:]*:/,'').replace(':','')}
-		};
-	});
-	const edges = data.edges.map(edge => {
-		var foundby = ' (name)';
-		if (edge.byname == 'FALSE') foundby = ' (ONB)';
-		return {
-			group: 'edges', data: {id: edge.source + '_' + edge.target, source: edge.source, target: edge.target, inattr: edge.inattr, label: edge.inattr.substring(1) + foundby}
-		}
-	});
+function buildGraphData(data, graphType){
+	let nodes = {}
+	let edges = {}
+	if (graphType == 'classGraph') {
+		nodes = data.nodes.map(node => {
+			return {
+				group: 'nodes', data: {"id": node.ID, "label": node.ID}
+			};
+		});
+		edges = data.edges.map(edge => {
+			// console.log(edge);
+			return {
+				group: 'edges', data: {id: edge.SOURCE + '_' + edge.TARGET, source: edge.SOURCE, target: edge.TARGET, label: edge.number_of_edges}
+			}
+		});
+	}
+	else if (graphType == 'objectGraph'){
+		nodes = data.nodes.map(node => {
+			var sType = node.type.replace(/^[^:]*/,'');
+			return {
+				group: 'nodes', data: {id: node.id, name: node.name, label: node.id+"\n"+node.type.replace(/^[^:]*:/,'').replace(':','')}
+			};
+		});
+		edges = data.edges.map(edge => {
+			var foundby = ' (name)';
+			if (edge.byname == 'FALSE') foundby = ' (ONB)';
+			return {
+				group: 'edges', data: {id: edge.source + '_' + edge.target, source: edge.source, target: edge.target, inattr: edge.inattr, label: edge.inattr.substring(1) + foundby}
+			}
+		});
+	}
+	return [nodes, edges];
+}
+
+function buildGraph(data, graphType) {
+	const [nodes, edges] = buildGraphData(data, graphType);
+
 	cy = cytoscape({
 		container: document.getElementById('cy'), // container to render in
-
+		
 		elements: {
 			nodes: nodes,
 			edges: edges
@@ -289,7 +308,7 @@ function buildGraph(data) {
 				selector: 'node',
 				style: {
 					'background-color': '#666',
-					'label': 'data(label)',
+					'label': 'data(name)',
 					'text-wrap': 'wrap'
 				}
 			},
