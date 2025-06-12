@@ -1,6 +1,11 @@
 let cy;
 const dbSelector = document.getElementById('dbSelector');
 const tableSelector = document.getElementById('tableSelector');
+let clickedNode;
+let state = 0;
+const toggleEl = document.getElementById('toggle');
+
+// ******* API functions
 
 async function retrieveDbFromSession(){
     query = 'http://localhost:3000/api/databaseSelected'
@@ -10,7 +15,7 @@ async function retrieveDbFromSession(){
     return data;
 }
 
-async function fetchDatabases(){
+async function fetchDatabases(){ // list the available databases on the server
     query = 'http://localhost:3000/api/database'
     console.log(query);
     const response = await fetch(query);
@@ -18,7 +23,7 @@ async function fetchDatabases(){
     return data;
 }
 
-async function fetchData(db){
+async function fetchData(db){ // retrieve full nodes + edges of the db
     const query = 'http://localhost:3000/api/graph-data?db=' + db;
     console.log(query);
 	const response = await fetch(query);
@@ -26,7 +31,7 @@ async function fetchData(db){
 	return data;
 }
 
-async function fecthTabledef(db){
+async function fecthTabledef(db){ // retrieve the tabledefs of the db
 	query = 'http://localhost:3000/api/graph-data/tabledef?db=' + db;
 	console.log(query);
 	const response = await fetch(query);
@@ -34,7 +39,7 @@ async function fecthTabledef(db){
 	return data;
 }
 
-async function fetchNode(db,id){
+async function fetchNodeForInfo(db,id){ // retrieve a single node to display informations
     const query = 'http://localhost:3000/api/graph-data/node?db='+db+'&id='+id;
     console.log(query);
 	const response = await fetch(query);
@@ -81,11 +86,58 @@ async function fetchNode(db,id){
     document.getElementById('node-info').appendChild(newDiv);
 }
 
+// ******* UI functions
+// toggle color targets/sources
+
+function colorNodesOnClick(){
+	if (cy && clickedNode) {
+		cy.nodes().forEach(n => {
+			n.style({
+				'background-color': '#666',
+				'width': 30,
+				'height': 30
+			});
+		});
+		// color the clicked node
+		clickedNode.style({
+			'background-color': '#d2268c',
+			'width': 50,
+			'height': 50
+		});
+		// color the targets/sources
+		if (toggleEl.classList[1] == 'state-0' || toggleEl.classList[1] == 'state-1') var incomingNodes = clickedNode.incomers('edge').sources();
+		if (toggleEl.classList[1] == 'state-2' || toggleEl.classList[1] == 'state-1') var outgoingNodes = clickedNode.outgoers('edge').targets();
+		if (incomingNodes) incomingNodes.forEach(node => {
+			node.style('background-color', '#ff9999');
+		});
+		if (outgoingNodes) outgoingNodes.forEach(node => {
+			node.style('background-color', '#33ccff');
+		});
+		fetchNodeForInfo(dbSelector.value,clickedNode.id());
+	}
+}
+
+function updateToggleLabel() {
+  toggleEl.classList.remove('state-0', 'state-1', 'state-2');
+  toggleEl.classList.add(`state-${state}`);
+  const labels = ['Incomers', 'Both', 'Outgoers'];
+  toggleEl.textContent = labels[state];
+  colorNodesOnClick();
+}
+
+// page INIT
 document.addEventListener('DOMContentLoaded', function() {
+	// database picklist - init
 	dbSelector.addEventListener('change', (event) => {
 		const selectedValue = event.target.value;
 		fecthTabledef(selectedValue);
 	});
+	// toggle color target/sources of the clicked node - init
+	toggleEl.addEventListener('click', () => {
+		state = (state + 1) % 3;
+		updateToggleLabel();
+	});
+
     fetchDatabases().then(data => {
         data.databases.forEach(item => {
             const option = document.createElement('option');
@@ -94,12 +146,14 @@ document.addEventListener('DOMContentLoaded', function() {
             dbSelector.appendChild(option);
         });
     });
+	
 	retrieveDbFromSession()
 	.then(data => {if (data.selectedDb) dbSelector.value = data.selectedDb;})
 	.then(data => {
 		if (dbSelector.value != "") fetchData(dbSelector.value).then(data => {
 			if (cy == undefined) buildGraph(data);
 		});
+		updateToggleLabel();// toggle coloration of nodes connected to the clicked one (sources/both/target)
 	})
 	
 	document.addEventListener('keydown', (event) => {
@@ -276,27 +330,9 @@ function buildGraph(data) {
 		}
 	});
 
-	cy.on('click', 'node', function(evt){
-		const clickedNode = evt.target;
-		cy.nodes().forEach(n => {
-			n.style({
-				'background-color': '#666',
-				'width': 30,
-				'height': 30
-			});
-		});
-		clickedNode.style({
-			'background-color': '#d2268c',
-			'width': 50,
-			'height': 50
-		});
-		// const incomingNodes = clickedNode.incomers('edge').sources();
-		const incomingNodes = clickedNode.outgoers('edge').targets();
-		lastSelectedNode = clickedNode;
-		incomingNodes.forEach(node => {
-			node.style('background-color', '#ff9999');
-		});
-		fetchNode(dbSelector.value,this.id());
+	cy.on('click', 'node', function(evt) {
+		clickedNode = evt.target;
+		colorNodesOnClick();
 	});
 	
 	// to finish
@@ -314,32 +350,3 @@ function buildGraph(data) {
 		});
 	});
 }
-
-
-let state = 0;
-const toggleEl = document.getElementById('toggle');
-
-function updateToggleLabel() {
-  toggleEl.classList.remove('state-0', 'state-1', 'state-2');
-  toggleEl.classList.add(`state-${state}`);
-  
-  const labels = ['Incomers', 'Outgoers', 'Reset'];
-  toggleEl.textContent = labels[state];
-}
-
-toggleEl.addEventListener('click', () => {
-  state = (state + 1) % 3;
-  updateToggleLabel();
-
-  if (selectedNode) {
-    cy.elements().removeClass('highlighted');
-    if (state === 0) {
-      selectedNode.incomers().addClass('highlighted');
-    } else if (state === 1) {
-      selectedNode.outgoers().addClass('highlighted');
-    }
-    // state 2 = reset, no highlighting
-  }
-});
-
-updateToggleLabel(); // init
