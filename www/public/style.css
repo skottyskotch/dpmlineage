@@ -34,15 +34,12 @@ html, body {
     border-radius: 5px;
     margin-top: 5px;
 }
-
 .highlight-green {
     background-color: lightgreen;
 }
-
 .highlight-blue {
     background-color: lightblue;
 }
-
 .highlight-yellow {
 	background-color: yellow !important;
 }
@@ -52,30 +49,6 @@ html, body {
 	font-family: monospace;
 	margin-top: 10px;
 	background-color: #f0f0f0;
-}
-
-.tri-toggle {
-  display: inline-block;
-  /* padding: 10px 20px; */
-  padding: 1px 1px;
-  background-color: #ddd;
-  border-radius: 8px;
-  /* cursor: pointer; */
-  user-select: none;
-  font-weight: bold;
-  transition: background-color 0.3s;
-}
-.tri-toggle.state-0 {
-  background-color: #ffcc00; /* Incomers */
-}
-.tri-toggle.state-1 {
-  background-color: #ccc; /* Both */
-}
-.tri-toggle.state-2 {
-  background-color: #66ccff;     /* Outgoers */
-}
-.tri-toggle.state-3 {
-  background-color: #ccc;     /* Both */
 }
 
 .right-pane {
@@ -90,60 +63,48 @@ html, body {
 	top: 0;
 	right: 0;
 	z-index: 100;
-	transform: translateX(0);
 	overflow-y: auto;
 }
-.right-pane.closed {
+.right-pane.collapsed {
 	transform: translateX(90%);
 }
+.right-pane.expanded {
+	transform: translateX(0);
+}
 .resizer {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 5px;
-  height: 100%;
-  cursor: ew-resize;
-  background-color: transparent; /* optionnel : #ccc pour visibilité */
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 5px;
+	height: 100%;
+	cursor: ew-resize;
+	background-color: transparent; /* optionnel : #ccc pour visibilité */
 }
 
 #actuators {
 	padding: 5px;
 	margin: 5px;
 	display: flex;
-	gap: 1rem;
+	gap: 5px;
 	border: 1px solid #ddd;
 }
 
-.toggle-button {
-	position: relative;
-	top: 10px;
-	left: 0px;
-	width: 30px;
-	height: 10px;
-	background: #007bff;
-	color: white;
-	transition: transform 0.3s ease;
-	border-radius: 4px 0 0 4px;
-	border: none;
-	cursor: pointer;
-	/* display: flex; */
-	display: inline-block;
-	align-items: center;
-	justify-content: center;
-	font-size: 16px;
+#dbSelector {
+	padding: 8px;
+	border-radius: 4px;
+	border: 1px solid #aaa;
 }
-.toggle-button:hover {
-	background: #0056b3;
-	display: inline-block;
+#tableSelector {
+	padding: 8px;
+	border-radius: 4px;
+	border: 1px solid #aaa;
 }
 
-.slidecontainer {
-	display: flex;
-	flex-direction: column;
+#highlightSelector {
 	width: 7%;
 }
 
-.slider {
+#slider {
 	-webkit-appearance: none;
 	display: inline-block;
 	width: 100%;
@@ -154,7 +115,26 @@ html, body {
 	-webkit-transition: .2s;
 	transition: opacity .2s;
 }
-
-.slider:hover {
+#slider:hover {
   opacity: 1;
 }
+
+#highlightMode {
+	padding: 1px 1px;
+	background-color: #ddd;
+	border-radius: 8px;
+	text-align: center;
+	user-select: none;
+	/* font-weight: bold; */
+	transition: background-color 0.3s;
+}
+#highlightMode.state-0 {
+	background-color: #ffcc00; /* Incomers */
+}
+#highlightMode.state-1 {
+	background-color: #ccc; /* Both */
+}
+#highlightMode.state-2 {
+	background-color: #66ccff;     /* Outgoers */
+}
+

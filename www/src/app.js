@@ -4,9 +4,128 @@ const tableSelector = document.getElementById('tableSelector');
 let clickedNode;
 let clickedNodeFamily = [];
 let state = 0;
-const toggleEl = document.getElementById('toggle');
+const highlightMode = document.getElementById('highlightMode');
 
-// ******* API functions
+// ******* UI functions
+
+// right panel
+const panel = document.getElementById('rightPane');
+function togglePane() {
+	const button = document.getElementById('toggleBtn');
+	panel.classList.toggle('collapsed');
+	if (panel.classList.contains('collapsed')) {
+		button.innerHTML = '⮜';
+	} else {
+		button.innerHTML = '⮞';
+	}
+}
+const resizer = document.getElementById('resizer');
+resizer.addEventListener('mousedown', (e) => {
+  e.preventDefault();
+  document.addEventListener('mousemove', resizePanel);
+  document.addEventListener('mouseup', stopResize);
+});
+function resizePanel(e) {
+  const newWidth = window.innerWidth - e.clientX;
+  if (newWidth > 150 && newWidth < 600) {
+    panel.style.width = newWidth + 'px';
+    // document.querySelector('.container').style.marginRight = newWidth + 'px';
+  }
+}
+function stopResize() {
+  document.removeEventListener('mousemove', resizePanel);
+  document.removeEventListener('mouseup', stopResize);
+}
+function displayInfo(data){
+	var attributes = data.node[0].ATTRIBUTES.split('|');
+	var values = data.node[0].DATA.split('|');
+	var title = data.node[0].TYPE;
+
+    const oldDiv = document.getElementById('infos');
+    if (oldDiv) oldDiv.remove();
+	const oldTitle = document.getElementById('title');
+	if (oldTitle) oldTitle.remove();
+
+	const newTitle = document.createElement('div');
+	newTitle.textContent = title;
+	newTitle.id = 'title';
+	document.getElementById('rightPane').appendChild(newTitle);
+
+    const newDiv = document.createElement('div');
+    newDiv.id = 'infos';
+
+    for (let i = 0; i < attributes.length; i++) {
+        const key = document.createElement('div');
+        key.textContent = attributes[i];
+		// key.classList.add(`kv-${attributes[i]}`.replace(':','')); // <- dynamic class
+		
+        const value = document.createElement('div');
+        value.textContent = values[i];
+		// value.classList.add(`kv-${attributes[i]}`.replace(':',''));
+		
+		if (attributes[i] === ':NAME' || attributes[i] === ':OBJECT-NUMBER') {
+            key.classList.add('highlight-yellow');
+            value.classList.add('highlight-yellow');
+        }
+        newDiv.appendChild(key);
+        newDiv.appendChild(value);
+    }
+	
+    // Add the new div in the parent node-info
+    // document.getElementById('node-info').appendChild(newDiv);
+    document.getElementById('rightPane').appendChild(newDiv);
+}
+
+// database selection menu
+dbSelector.addEventListener('change', (event) => {
+	const selectedValue = event.target.value;
+	fetchTabledef(selectedValue);
+});
+
+// coloration mode for links targets/sources
+function colorNodesOnClick(){
+	if (cy && clickedNode) {
+		// clean styles
+		cy.nodes().forEach(n => {n.style({'background-color': '#666', 'width': '30', 'height': '30'});});
+		cy.nodes().forEach(n => {n.style({'background-color': '#666'});});
+		cy.edges().forEach(e => {e.style('line-color', objectGraphStyle[1].style['line-color']);});
+
+		// color clicked node
+		clickedNode.style(graphProperties['objectGraph'].highlightNodeStyle);
+
+		// color the targets/sources
+		if (highlightMode.classList[1] == 'state-0' || highlightMode.classList[1] == 'state-1' || highlightMode.classList[1] == 'state-3') var incomingNodes = clickedNode.incomers('edge').sources();
+		if (highlightMode.classList[1] == 'state-2' || highlightMode.classList[1] == 'state-1' || highlightMode.classList[1] == 'state-3') var outgoingNodes = clickedNode.outgoers('edge').targets();
+		if (incomingNodes) {
+			clickedNode.incomers('edge').forEach(edge => {edge.style({'line-color': '#ff9999'});});
+			incomingNodes.forEach(node => {
+				if (node != clickedNode) node.style('background-color', '#ff9999');
+			});
+		}
+		if (outgoingNodes) {
+			clickedNode.outgoers('edge').forEach(edge => {edge.style({'line-color': '#33ccff'});});
+			outgoingNodes.forEach(node => {
+				if (node != clickedNode) node.style('background-color', '#33ccff');
+			});
+		}
+	}
+}
+
+function updateToggleLabel(value) {
+	highlightMode.classList.remove('state-0', 'state-1', 'state-2');
+	highlightMode.classList.add(`state-${value}`);
+	const labels = ['Incomers', 'Both', 'Outgoers'];
+	highlightMode.textContent = labels[value];
+	colorNodesOnClick();
+}
+
+// toggle color target/sources of the clicked node - init
+slider.oninput = function() {
+	highlightMode.className = this.value;
+	updateToggleLabel(this.value);
+};
+
+// ******* API functionshy
 
 async function retrieveDbFromSession(){
     query = 'http://localhost:3000/api/databaseSelected'
@@ -45,115 +164,7 @@ async function fetchNodeForInfo(db,id){ // retrieve a single node to display inf
     console.log(query);
 	const response = await fetch(query);
 	const data = await response.json();
-	var attributes = data.node[0].ATTRIBUTES.split('|');
-	var values = data.node[0].DATA.split('|');
-	var title = data.node[0].TYPE;
-
-    const oldDiv = document.getElementById('infos');
-    if (oldDiv) oldDiv.remove();
-	const oldTitle = document.getElementById('title');
-	if (oldTitle) oldTitle.remove();
-
-	const newTitle = document.createElement('div');
-	newTitle.textContent = title;
-	newTitle.id = 'title';
-	// document.getElementById('node-info').appendChild(newTitle);
-	document.getElementById('rightPane').appendChild(newTitle);
-
-    const newDiv = document.createElement('div');
-    newDiv.id = 'infos';
-
-    for (let i = 0; i < attributes.length; i++) {
-        const key = document.createElement('div');
-        key.textContent = attributes[i];
-		key.classList.add(`kv-${attributes[i]}`.replace(':','')); // <- dynamic class
-		
-        const value = document.createElement('div');
-        value.textContent = values[i];
-		value.classList.add(`kv-${attributes[i]}`.replace(':',''));
-		
-		if (attributes[i] === ':NAME' || attributes[i] === ':OBJECT-NUMBER') {
-            key.classList.add('highlight-yellow');
-            value.classList.add('highlight-yellow');
-        }
-        newDiv.appendChild(key);
-        newDiv.appendChild(value);
-    }
-	
-    // Add the new div in the parent node-info
-    // document.getElementById('node-info').appendChild(newDiv);
-    document.getElementById('rightPane').appendChild(newDiv);
-}
-
-// ******* UI functions
-
-// right panel
-const pane = document.getElementById('rightPane');
-const resizer = document.getElementById('resizer');
-
-function togglePane() {
-	const pane = document.getElementById('rightPane');
-	const button = document.getElementById('toggleBtn');
-	pane.classList.toggle('closed');
-	// button.classList.toggle('closed');
-	if (pane.classList.contains('closed')) {
-		button.innerHTML = '⮜';
-	} else {
-		button.innerHTML = '⮞';
-	}
-}
-resizer.addEventListener('mousedown', (e) => {
-  e.preventDefault();
-  document.addEventListener('mousemove', resizePane);
-  document.addEventListener('mouseup', stopResize);
-});
-
-function resizePane(e) {
-  const newWidth = window.innerWidth - e.clientX;
-  if (newWidth > 150 && newWidth < 600) {
-    pane.style.width = newWidth + 'px';
-    // document.querySelector('.container').style.marginRight = newWidth + 'px';
-  }
-}
-function stopResize() {
-  document.removeEventListener('mousemove', resizePane);
-  document.removeEventListener('mouseup', stopResize);
-}
-
-// toggle color targets/sources
-function colorNodesOnClick(){
-	if (cy && clickedNode) {
-		// clean styles
-		cy.nodes().forEach(n => {n.style({'background-color': '#666'});});
-		cy.edges().forEach(e => {e.style('line-color', objectGraphStyle[1].style['line-color']);});
-
-		// color clicked node
-		clickedNode.style(graphProperties['objectGraph'].highlightNodeStyle);
-
-		// color the targets/sources
-		if (toggleEl.classList[1] == 'state-0' || toggleEl.classList[1] == 'state-1' || toggleEl.classList[1] == 'state-3') var incomingNodes = clickedNode.incomers('edge').sources();
-		if (toggleEl.classList[1] == 'state-2' || toggleEl.classList[1] == 'state-1' || toggleEl.classList[1] == 'state-3') var outgoingNodes = clickedNode.outgoers('edge').targets();
-		if (incomingNodes) {
-			clickedNode.incomers('edge').forEach(edge => {edge.style({'line-color': '#ff9999'});});
-			incomingNodes.forEach(node => {
-				if (node != clickedNode) node.style('background-color', '#ff9999');
-			});
-		}
-		if (outgoingNodes) {
-			clickedNode.outgoers('edge').forEach(edge => {edge.style({'line-color': '#33ccff'});});
-			outgoingNodes.forEach(node => {
-				if (node != clickedNode) node.style('background-color', '#33ccff');
-			});
-		}
-	}
-}
-
-function updateToggleLabel() {
-  toggleEl.classList.remove('state-0', 'state-1', 'state-2', 'state-3');
-  toggleEl.classList.add(`state-${state}`);
-  const labels = ['Incomers', 'Both', 'Outgoers', 'Both'];
-  toggleEl.textContent = labels[state];
-  colorNodesOnClick();
+	return data;
 }
 
 // page INIT
@@ -167,23 +178,13 @@ document.addEventListener('DOMContentLoaded', function() {
             dbSelector.appendChild(option);
         });
     });
-	dbSelector.addEventListener('change', (event) => {
-		const selectedValue = event.target.value;
-		fetchTabledef(selectedValue);
-	});
-
-	// toggle color target/sources of the clicked node - init
-	toggleEl.addEventListener('click', () => {
-		state = (state + 1) % 4;
-		updateToggleLabel();
-	});
 
 	// draw first graph
 	retrieveDbFromSession()
 	.then(data => {if (data.selectedDb) dbSelector.value = data.selectedDb;})
 	.then(data => {
 		if (dbSelector.value != "" && cy == undefined) fetchTabledef(dbSelector.value).then(data => {buildGraph(data,'classGraph');});
-		updateToggleLabel();
+		updateToggleLabel(slider.value);
 	})
 	
 	document.addEventListener('keydown', (event) => {
@@ -411,7 +412,8 @@ const graphProperties = {
 		onClick:  function(evt) {
 			clickedNode = evt.target;
 			colorNodesOnClick();
-			fetchNodeForInfo(dbSelector.value,clickedNode.id());
+			fetchNodeForInfo(dbSelector.value,clickedNode.id())
+			.then(data => {displayInfo(data)});
 		}
 	}
 }
