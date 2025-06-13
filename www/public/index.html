@@ -8,8 +8,6 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.31.2/cytoscape.min.js"></script>
 </head>
 <body>
-	<h1></h1>
-	<!-- <div id="wrapper"> -->
 	<div style="margin: 10px; font-family: Arial;">
 		<select id="dbSelector" name="database" style="padding: 8px; border-radius: 4px; border: 1px solid #aaa;">
 			<option value="" disabled selected hidden>-- Select a database --</option>
@@ -17,13 +15,23 @@
 		<select id="tableSelector" name="tabledef" style="padding: 8px; border-radius: 4px; border: 1px solid #aaa;">
 			<option value="" disabled selected hidden>-- Select a table --</option>
 		</select>
-		<div id="toggle" class="tri-toggle">Incomers</div>
+		<div class="slidecontainer">
+			<input type="range" min="1" max="3" value="2" class="slider" id="myRange">
+			<div id="toggle" class="tri-toggle">Incomers</div>
+			<span id="demo"></span>
+		</div>
 		<button id="run" style="padding: 10px 12px; border-radius: 4px; background-color: #007BFF; color: white; border: none;">Run</button>
 		<button id="admin" style="padding: 10px 12px; border-radius: 4px; background-color: #007BFF; color: white; border: none;" onclick="window.location.href='/autre-page'">Admin</button>
 	</div>
 	<div id="cy"><h2>Graph visualization</h2></div>
-	<div id="node-info"><h2>Click a node for more information.</h2></div>
-	<!-- </div> -->
+	<!-- <div id="node-info"><h2>Click a node for more information.</h2></div> -->
+	<div id="rightPane" class="right-pane">
+		<div id="resizer" class="resizer"></div>
+		<button id="toggleBtn" class="toggle-button" onclick="togglePane()">⮞</button>
+		<h2 style="margin-left: 30px; text-align: center;">-Information-</h2>
+		<p style="margin-left: 30px;">Click a node for more information.</p>
+	</div>
+
 	<script src="https://unpkg.com/layout-base/layout-base.js"></script>
 	<script src="https://unpkg.com/cose-base/cose-base.js"></script>
 	<script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>

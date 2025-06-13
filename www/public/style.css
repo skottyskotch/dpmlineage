@@ -1,5 +1,6 @@
 * {
 	margin: 0;
+	font-family: sans-serif;
 	padding: 0;
 }
 
@@ -10,9 +11,10 @@ html, body {
 #cy {
 	font-family: monospace;
 	padding-top: 10px;
-	width: 80%;
+	width: 100%;
 	height: 100%;
 	float: left;
+	background-color: transparent;
 }
 
 #node-info {
@@ -51,23 +53,99 @@ html, body {
 	margin-top: 10px;
 	background-color: #f0f0f0;
 }
+
 .tri-toggle {
   display: inline-block;
-  padding: 10px 20px;
+  /* padding: 10px 20px; */
+  padding: 1px 1px;
   background-color: #ddd;
   border-radius: 8px;
-  cursor: pointer;
+  /* cursor: pointer; */
   user-select: none;
   font-weight: bold;
   transition: background-color 0.3s;
 }
-
 .tri-toggle.state-0 {
   background-color: #ffcc00; /* Incomers */
 }
 .tri-toggle.state-1 {
-  background-color: #66ccff; /* Outgoers */
+  background-color: #ccc; /* Both */
 }
 .tri-toggle.state-2 {
-  background-color: #ccc;     /* Reset */
+  background-color: #66ccff;     /* Outgoers */
+}
+.tri-toggle.state-3 {
+  background-color: #ccc;     /* Both */
+}
+
+.container {
+  padding: 1rem;
+}
+
+.right-pane {
+	margin-left: 20px;
+	width: 300px;
+	height: 100vh;
+	background: #ffffff;
+	border-left: 1px solid #ddd;
+	transition: transform 0.3s ease;
+	box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+	position: fixed;
+	top: 0;
+	right: 0;
+	z-index: 100;
+	transform: translateX(0);
+	overflow-y: auto;
+}
+.right-pane.closed {
+	transform: translateX(90%);
+}
+.resizer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 5px;
+  height: 100%;
+  cursor: ew-resize;
+  background-color: transparent; /* optionnel : #ccc pour visibilité */
+}
+
+.toggle-button {
+	position: relative;
+	top: 10px;
+	left: 0px;
+	width: 30px;
+	height: 10px;
+	background: #007bff;
+	color: white;
+	transition: transform 0.3s ease;
+	border-radius: 4px 0 0 4px;
+	border: none;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 16px;
+}
+.toggle-button:hover {
+	background: #0056b3;
+}
+
+.slidecontainer {
+  width: 100%;
+}
+
+.slider {
+  -webkit-appearance: none;
+  width: 5%;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  border-radius: 16px;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.slider:hover {
+  opacity: 1;
 }

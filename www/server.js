@@ -126,6 +126,31 @@ app.get('/api/graph-data/node', (req,res) => {
     }
 });
 
+app.get('/api/graph-data/class', (req,res) => {
+	if (req.query.db) {
+		req.session.selection = req.query.db;
+		if (hDatabases[req.query.db] != undefined) {
+			let db = hDatabases[req.query.db];
+			let sQuery = "select ID, OBJECTS from TABLEDEF where ID = " + req.query.id + ";";
+			db.all(sQuery, (err, node) => {
+				if (err) {
+					if (err.message = "SQLITE_ERROR: no such column: undefined") err.message += ". Valid request is like /api/graph-data/class?db=dbname&ID=...";
+					res.status(400).json({"error": err.message});
+					return;
+				}
+				const selectedDb = req.session.selection;
+				res.json({selectedDb, node});
+			});
+		}
+        else{
+            res.json({"error":"database " +req.query.db + " not found"});
+        }
+    }
+    else {
+        res.json({"error":"Please request a database /api/graph-data?db=databasename.db&ID=nodeid"});
+    }
+});
+
 app.get('/api/graph-data/tabledef', (req,res) => {
 	if (req.query.db) {
 		req.session.selection = req.query.db;
