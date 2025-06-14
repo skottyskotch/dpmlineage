@@ -79,7 +79,7 @@ function displayInfo(data){
 // database selection menu
 dbSelector.addEventListener('change', (event) => {
 	const selectedValue = event.target.value;
-	fetchTabledef(selectedValue);
+	fetchTabledef(selectedValue).then(data => {buildGraph(data,'classGraph');});
 });
 
 // coloration mode for links targets/sources

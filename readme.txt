@@ -11,18 +11,29 @@ npm install
  - use:
 download a dpm.gz
 dpm_extract ...dpm.gz
-	with -x: you will be prompted to exclude some tables, please do your selection. The selection is stored in a text file in the current directory for further attempt.
+	with -x (recommended): you will be prompted to exclude some tables, please do your selection. The selection is stored in a text file in the current directory for further attempt. (prompted to be applied at the next exclude step)
 It will create the directory structure in ./output/DPM_OUT
 dpm_dependancies.py .../DMP_OUT
 	with -b: you will be prompted for a session browsing from object to callers
 	without -b: it will generate a csv of links called/caller/attribute in output
-	without -b, with -m db: it will generate a db with 3 tables edges, nodes, tabledef in output. use a db client like dbeaver and do your joins. (sqlite)
+	with "-m db" (recommended): it will generate a db with 3 tables edges, nodes, tabledef in output. use a db client like dbeaver and do your joins. (sqlite)
 graph visualization: open a command line in www
 node server.js
 open your navigator to localhost:3000
 api endpoint at localhost:3000/api/graph-data
 
-flaws:
+# todo:
+color arrows the same as the edge
+on click a link on class graph: lists the objects in the right panel
+on click a graph node: 
+	expand will replace the node by a subgrpah of objects in the class
+	run will draw the object graph from this class + link to other classes
+	
+	
+# flaws:
+# javascript l2: 
+	fixer la conversion des blob base85 en text
+	dépendances fonctions de script - objets
 # trouvé par nom
 des objets de config qui ont le même nom. Si l'un matche, l'autre matche
  - je ne vois pas comment cela peut être amélioré.
