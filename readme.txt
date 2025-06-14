@@ -28,13 +28,12 @@ on click a link on class graph: lists the objects in the right panel
 on click a graph node: 
 	expand will replace the node by a subgrpah of objects in the class
 	run will draw the object graph from this class + link to other classes
-	
-	
+
 # flaws:
-# javascript l2: 
-	fixer la conversion des blob base85 en text
-	dépendances fonctions de script - objets
-# trouvé par nom
+javascript l2: 
+ - fixer la conversion des blob base85 en text
+ - dépendances fonctions de script - objets
+trouvé par nom
 des objets de config qui ont le même nom. Si l'un matche, l'autre matche
  - je ne vois pas comment cela peut être amélioré.
 des objets avec un nom A qui fait partie d'un autre nom plus long AB. Si AB est référencé, A matche aussi

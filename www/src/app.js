@@ -86,24 +86,23 @@ dbSelector.addEventListener('change', (event) => {
 function colorNodesOnClick(){
 	if (cy && clickedNode) {
 		// clean styles
-		cy.nodes().forEach(n => {n.style({'background-color': '#666', 'width': '30', 'height': '30'});});
-		cy.nodes().forEach(n => {n.style({'background-color': '#666'});});
-		cy.edges().forEach(e => {e.style('line-color', objectGraphStyle[1].style['line-color']);});
+		cy.nodes().forEach(n => {n.style(graphProperties.defaultNodeStyle);});
+		cy.edges().forEach(e => {e.style(graphProperties.defaultEdgeStyle);});
 
 		// color clicked node
-		clickedNode.style(graphProperties['objectGraph'].highlightNodeStyle);
+		clickedNode.style(graphProperties.highlightedNodeStyle);
 
 		// color the targets/sources
-		if (highlightMode.classList[1] == 'state-0' || highlightMode.classList[1] == 'state-1' || highlightMode.classList[1] == 'state-3') var incomingNodes = clickedNode.incomers('edge').sources();
-		if (highlightMode.classList[1] == 'state-2' || highlightMode.classList[1] == 'state-1' || highlightMode.classList[1] == 'state-3') var outgoingNodes = clickedNode.outgoers('edge').targets();
+		if (highlightMode.classList.value == 'state-0' || highlightMode.classList.value == 'state-1') var incomingNodes = clickedNode.incomers('edge').sources();
+		if (highlightMode.classList.value == 'state-2' || highlightMode.classList.value == 'state-1' ) var outgoingNodes = clickedNode.outgoers('edge').targets();
 		if (incomingNodes) {
-			clickedNode.incomers('edge').forEach(edge => {edge.style({'line-color': '#ff9999'});});
+			clickedNode.incomers('edge').forEach(edge => {edge.style(graphProperties.highlightedEdgeStyle);});
 			incomingNodes.forEach(node => {
 				if (node != clickedNode) node.style('background-color', '#ff9999');
 			});
 		}
 		if (outgoingNodes) {
-			clickedNode.outgoers('edge').forEach(edge => {edge.style({'line-color': '#33ccff'});});
+			clickedNode.outgoers('edge').forEach(edge => {edge.style({'line-color': '#33ccff', 'target-arrow-color': '#33ccff'});});
 			outgoingNodes.forEach(node => {
 				if (node != clickedNode) node.style('background-color', '#33ccff');
 			});
@@ -121,7 +120,6 @@ function updateToggleLabel(value) {
 
 // toggle color target/sources of the clicked node - init
 slider.oninput = function() {
-	highlightMode.className = this.value;
 	updateToggleLabel(this.value);
 };
 
@@ -255,7 +253,7 @@ function buildGraphData(data, graphType){
 	if (graphType == 'classGraph') {
 		nodes = data.nodes.map(node => {
 			return {
-				group: 'nodes', data: {"id": node.ID, "label": node.ID}
+				group: 'nodes', data: {"id": node.ID, name: node.ID, label: node.ID, class: 'table'}
 			};
 		});
 		edges = data.edges.map(edge => {
@@ -268,7 +266,7 @@ function buildGraphData(data, graphType){
 		nodes = data.nodes.map(node => {
 			var sType = node.type.replace(/^[^:]*/,'');
 			return {
-				group: 'nodes', data: {id: node.id, name: node.name, label: node.id+"\n"+node.type.replace(/^[^:]*:/,'').replace(':','')}
+				group: 'nodes', data: {id: node.id, name: node.name, label: node.id+"\n"+node.type.replace(/^[^:]*:/,'').replace(':',''), class: 'object'}
 			};
 		});
 		edges = data.edges.map(edge => {
@@ -283,19 +281,16 @@ function buildGraphData(data, graphType){
 }
 
 function buildGraph(data, graphType) {
+	console.log('buildgraph("'+graphType+'")');
 	const [nodes, edges] = buildGraphData(data, graphType);
-	const myLayout = graphProperties[graphType].layout;
-	const myStyle = graphProperties[graphType].style;
-	const myOnClick = graphProperties[graphType].onClick;
-		
 	cy = cytoscape({
 		container: document.getElementById('cy'), // container to render in
 		elements: {nodes: nodes, edges: edges},
-		style: myStyle,
-		layout: myLayout
+		style: graphProperties.style,
+		layout: graphProperties.classGraphLayout
 	});
 
-	cy.on('click', 'node', myOnClick);
+	cy.on('click', 'node', graphProperties.onClickNode);
 	
 	// to finish
 	cy.on('mousedown', 'edge', function(evt) {
@@ -338,82 +333,52 @@ const breadthfirstLayout = {
 	stop: undefined, // callback on layoutstop
 	transform: function (node, position ){ return position; } // transform a given node position. Useful for changing flow direction in discrete layouts
 };
-const objectGraphStyle = [
-	{
-		selector: 'node',
-		style: {
-			'background-color': '#666',
-			'label': 'data(name)',
-			'text-wrap': 'wrap'
-		}
-	},
-	{
-		selector: 'edge',
-		style: {
-			'width': 3,
-			'label': 'data(label)',
-			'edge-text-rotation': 'autorotate',
-			'line-color': '#ccc',
-			'target-arrow-color': '#ccc',
-			'target-arrow-shape': 'triangle',
-			'curve-style': 'bezier'
-		}
-	}
-];
-const classGraphStyle = [
-	{
-		selector: 'node',
-		style: {
-			'background-color': '#666',
-			'label': 'data(label)',
-			'text-wrap': 'wrap'
-		}
-	},
-	{
-		selector: 'edge',
-		style: {
-			'width': 3,
-			'label': 'data(label)',
-			'edge-text-rotation': 'autorotate',
-			'line-color': '#ccc',
-			'target-arrow-color': '#ccc',
-			'target-arrow-shape': 'triangle',
-			'curve-style': 'bezier'
-		}
-	}
-];
+
 const graphProperties = {
-	'classGraph' : {
-		layout: {name: 'circle', padding: 100},
-		style: classGraphStyle,
-		nodeStyle: classGraphStyle[0].style,
-		highlightNodeStyle: {
-			'background-color': '#d2268c',
-			'width': 50,
-			'height': 50
+	classGraphLayout: {name: 'circle', padding: 100},
+	objectGraphLayout: breadthfirstLayout,
+	style: [
+		{
+			selector: 'node',
+			style: {
+				'background-color': '#666',
+				'label': 'data(label)',
+				'text-wrap': 'wrap'
+			}
 		},
-		edgeStyle: classGraphStyle[1].style,
-		onClick:  function(evt) {
-			clickedNode = evt.target;
-			colorNodesOnClick();
+		{
+			selector: 'edge',
+			style: {
+				'width': 3,
+				'label': 'data(label)',
+				'edge-text-rotation': 'autorotate',
+				'line-color': '#ccc',
+				'target-arrow-color': '#ccc',
+				'target-arrow-shape': 'triangle',
+				'curve-style': 'bezier'
+			}
 		}
+	],
+	defaultNodeStyle: {
+		'background-color': '#666',
+		'width': '30',
+		'height': '30'
 	},
-	'objectGraph': {
-		layout: breadthfirstLayout,
-		style: objectGraphStyle,
-		nodeStyle: objectGraphStyle[0].style,
-		highlightNodeStyle: {
-			'background-color': '#d2268c',
-			'width': 50,
-			'height': 50
-		},
-		edgeStyle: objectGraphStyle[1].style,
-		highlightEdgeStyle: {},
-		onClick:  function(evt) {
-			clickedNode = evt.target;
-			colorNodesOnClick();
-			fetchNodeForInfo(dbSelector.value,clickedNode.id())
-			.then(data => {displayInfo(data)});
-		}
-	}
+	highlightedNodeStyle: {
+		'background-color': '#d2268c',
+		'width': 50,
+		'height': 50
+	},
+	defaultEdgeStyle: {
+		'width': 3,
+		'line-color': '#ccc',
+		'target-arrow-color': '#ccc'
+	},
+	highlightedEdgeStyle: {
+		'line-color': '#ff9999',
+		'target-arrow-color': '#ff9999'
+	},
+	onClickEdge:  function(evt) {clickedNode = evt.target; colorNodesOnClick();},
+	onClickNode:  function(evt) {clickedNode = evt.target; colorNodesOnClick();
+		if (evt.target.class == 'object') fetchNodeForInfo(dbSelector.value,clickedNode.id()).then(data => {displayInfo(data)});}
 }
