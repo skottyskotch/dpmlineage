@@ -2,7 +2,7 @@ let cy;
 const dbSelector = document.getElementById('dbSelector');
 const tableSelector = document.getElementById('tableSelector');
 let clickedNode;
-let clickedNodeFamily = [];
+let clickedExpansion = 0;
 let state = 0;
 const highlightMode = document.getElementById('highlightMode');
 
@@ -165,15 +165,15 @@ function colorNodesOnClick(){
 		if (highlightMode.classList.value == 'state-0' || highlightMode.classList.value == 'state-1') var incomingNodes = clickedNode.incomers('edge').sources();
 		if (highlightMode.classList.value == 'state-2' || highlightMode.classList.value == 'state-1' ) var outgoingNodes = clickedNode.outgoers('edge').targets();
 		if (incomingNodes) {
-			clickedNode.incomers('edge').forEach(edge => {edge.style(graphProperties.highlightedEdgeStyle);});
+			clickedNode.incomers('edge').forEach(edge => {edge.style(graphProperties.highlightedEdgeIncomerStyle);});
 			incomingNodes.forEach(node => {
-				if (node != clickedNode) node.style('background-color', '#ff9999');
+				if (node != clickedNode) node.style(graphProperties.highlightedNodeIncomerStyle);
 			});
 		}
 		if (outgoingNodes) {
-			clickedNode.outgoers('edge').forEach(edge => {edge.style({'line-color': '#33ccff', 'target-arrow-color': '#33ccff'});});
+			clickedNode.outgoers('edge').forEach(edge => {edge.style(graphProperties.highlightedEdgeOutgoerStyle);});
 			outgoingNodes.forEach(node => {
-				if (node != clickedNode) node.style('background-color', '#33ccff');
+				if (node != clickedNode) node.style(graphProperties.highlightedNodeOutgoerStyle);
 			});
 		}
 	}
@@ -184,6 +184,17 @@ function updateToggleLabel(value) {
 	const labels = ['Incomers', 'Both', 'Outgoers'];
 	highlightMode.textContent = labels[value];
 	colorNodesOnClick();
+}
+
+function colorButtons(){
+	if (clickedNode) {
+		document.getElementById("Isolate").backgroundColor = "#007BFF";
+		document.getElementById("Expand").backgroundColor = "#007BFF";
+	}
+	else {
+		document.getElementById("Isolate").backgroundColor = "#ccc";
+		document.getElementById("Expand").backgroundColor = "#ccc";
+	}
 }
 
 // toggle color target/sources of the clicked node - init
@@ -281,12 +292,19 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	
 	document.getElementById('Isolate').addEventListener('click', () => {
-		if (clickedNode.data('class') == 'table');
-		fetchData('graph-data/tabledef', 'db', dbSelector.value, 'id', clickedNode.data('name'))
-		.then(data => buildGraph(data, 'classGraph'));			
+		if (clickedNode != undefined) {
+			if (clickedNode.data('class') == 'table') {
+				fetchData('graph-data/tabledef', 'db', dbSelector.value, 'id', clickedNode.data('name'))
+				.then(data => buildGraph(data, 'classGraph'));
+			}
+			else if (clickedNode.data('class') == 'object') {
+				clickedNodeExpansion += 1;
+				fetchData('graph-data/nodeIsolation', 'db', dbSelector.value, 'id', clickedNode.data('id'));
+			}
+		}
 	});
 
-	document.getElementById('run').addEventListener('click', () => {
+	document.getElementById('Full').addEventListener('click', () => {
 		fetchData('graph-data/tabledef', 'db', dbSelector.value).then(data => {
 			data.nodes.forEach(item => {
 				const option = document.createElement('option');
@@ -420,21 +438,34 @@ const graphProperties = {
 		'width': 50,
 		'height': 50
 	},
+	highlightedNodeIncomerStyle: {
+		'background-color': '#ffcc00'
+	},
+	highlightedNodeOutgoerStyle: {
+		'background-color': '#66ccff'
+	},
 	defaultEdgeStyle: {
 		'width': 3,
 		'line-color': '#ccc',
 		'target-arrow-color': '#ccc'
 	},
-	highlightedEdgeStyle: {
-		'line-color': '#ff9999',
-		'target-arrow-color': '#ff9999'
+	highlightedEdgeIncomerStyle: {
+		'line-color': '#ffcc00',
+		'target-arrow-color': '#ffcc00'
+	},
+	highlightedEdgeOutgoerStyle: {
+		'line-color': '#66ccff',
+		'target-arrow-color': '#66ccff'
 	},
 	onClickEdge:  function(evt) {
 		clickedNode = evt.target;
-		colorNodesOnClick();},
+		colorNodesOnClick();
+		colorButtons();
+	},
 	onClickNode:  function(evt) {
 		clickedNode = evt.target;
 		colorNodesOnClick();
+		colorButtons();
 		if (clickedNode.data('class') == 'object') fetchData('graph-data/node', 'db', dbSelector.value, 'id', clickedNode.id()).then(data => {displayInfoObject(data)});
 		else if (clickedNode.data('class') == 'table') fetchData('graph-data/tabledef', 'db', dbSelector.value, 'id', clickedNode.id()).then(data => {displayInfoTable(data)});}
 }

@@ -20,7 +20,6 @@ app.use('/src', express.static(path.join(__dirname, 'src')));
 
 // useful db queries for apis
 var depth = 1;
-var tableDefFilter = "#%TEMP-TABLE:_SC_PT_REPORTING:";
 var sSampleQueryNodes = "SELECT ID, TYPE from nodes limit 500";
 var sSampleQueryEdges = "with cte as (select * from nodes limit 500) select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges a join cte b on a.source = b.id join cte c on a.target = c.id;";
 // var sQueryNodes = "with recursive subgraph(id, depth) as (select id, 0 from nodes where type = '{0}' union all select edges.source, subgraph.depth + 1 from edges join subgraph on edges.target = subgraph.id where subgraph.depth < {1})select ID, TYPE from nodes where id in (select id from subgraph);";

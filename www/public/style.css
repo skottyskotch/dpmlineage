@@ -145,3 +145,20 @@ html, body {
 	background-color: #66ccff;     /* Outgoers */
 }
 
+#Isolate{
+	padding: 10px 12px;
+	border-radius: 4px;
+	background-color: #ccc;
+	/* background-color: #007BFF; */
+	color: white; 
+	border: none;
+}
+
+#Expand{
+	padding: 10px 12px;
+	border-radius: 4px;
+	background-color: #ccc;
+	/* background-color: #007BFF; */
+	color: white;
+	border: none;
+}
