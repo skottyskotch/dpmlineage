@@ -36,23 +36,30 @@ function stopResize() {
   document.removeEventListener('mousemove', resizePanel);
   document.removeEventListener('mouseup', stopResize);
 }
-function displayInfo(data){
+function displayInfoObject(data){
 	var attributes = data.node[0].ATTRIBUTES.split('|');
 	var values = data.node[0].DATA.split('|');
 	var title = data.node[0].TYPE;
+	
+	const panel = document.getElementById('rightPane');
+	
+    const oldInfo = document.getElementById('info');
+    if (oldInfo) oldInfo.remove();
+	
+	// container of object info
+	const newInfo = document.createElement('div');
+	newInfo.id = 'info';
+	panel.appendChild(newInfo);
 
-    const oldDiv = document.getElementById('infos');
-    if (oldDiv) oldDiv.remove();
-	const oldTitle = document.getElementById('title');
-	if (oldTitle) oldTitle.remove();
-
+	// object title section
 	const newTitle = document.createElement('div');
-	newTitle.textContent = title;
+	newInfo.appendChild(newTitle);
+	newTitle.textContent = data.node[0].TYPE;
 	newTitle.id = 'title';
-	document.getElementById('rightPane').appendChild(newTitle);
 
     const newDiv = document.createElement('div');
     newDiv.id = 'infos';
+	newDiv.className = 'infodata';
 
     for (let i = 0; i < attributes.length; i++) {
         const key = document.createElement('div');
@@ -70,10 +77,72 @@ function displayInfo(data){
         newDiv.appendChild(key);
         newDiv.appendChild(value);
     }
-	
-    // Add the new div in the parent node-info
-    // document.getElementById('node-info').appendChild(newDiv);
+
     document.getElementById('rightPane').appendChild(newDiv);
+}
+
+function displayInfoTable(data){
+	const panel = document.getElementById('rightPane');
+	
+    const oldInfo = document.getElementById('info');
+    if (oldInfo) oldInfo.remove();
+	
+	// container of object info
+	const newInfo = document.createElement('div');
+	panel.appendChild(newInfo);
+	newInfo.id = 'info';
+
+	// object title section
+	const newTitle = document.createElement('div');
+	newInfo.appendChild(newTitle);
+	newTitle.className = 'title';
+	const number_of_connections = data.edges.reduce((total, item) => total + item.number_of_edges, 0);
+	const title = clickedNode.data('id') + '\n' + clickedNode.data('objects') + ' objects\n' + number_of_connections + ' connections';
+	newTitle.style.whiteSpace = 'pre-line';
+	newTitle.textContent = title;
+	newTitle.innerHTML = newTitle.textContent.replace(/\n/g, '<br>');
+	
+	// "used by" section
+	const sectionTitle1 = document.createElement('div');
+	newInfo.appendChild(sectionTitle1);
+	sectionTitle1.className = 'title';
+	sectionTitle1.textContent = "Used by:";
+	
+	const infoDiv1 = document.createElement('div');
+	infoDiv1.className = 'infoSection';
+	sectionTitle1.appendChild(infoDiv1);
+	
+    data.edges.forEach(edge =>{
+		if (edge.SOURCE != clickedNode.data('id') || [edge.SOURCE, edge.TARGET].filter( x => x === clickedNode.data('id')).length == 2) {
+			const value = document.createElement('div');
+			value.textContent = edge.number_of_edges;
+			const key = document.createElement('div');
+			key.textContent = edge.SOURCE;
+			infoDiv1.appendChild(value);
+			infoDiv1.appendChild(key);
+		};
+	});
+	
+	// "uses:" section
+	const sectionTitle2 = document.createElement('div');
+	newInfo.appendChild(sectionTitle2);
+	sectionTitle2.className = 'title';
+	sectionTitle2.textContent = "Uses";
+	
+	const infoDiv2 = document.createElement('div');
+	infoDiv2.className = 'infoSection';
+	sectionTitle2.appendChild(infoDiv2);
+	
+    data.edges.forEach(edge =>{
+		if (edge.TARGET != clickedNode.data('id') || [edge.SOURCE, edge.TARGET].filter( x => x === clickedNode.data('id')).length == 2) {
+			const value = document.createElement('div');
+			value.textContent = edge.number_of_edges;
+			const key = document.createElement('div');
+			key.textContent = edge.TARGET;
+			infoDiv2.appendChild(value);
+			infoDiv2.appendChild(key);
+		};
+	});
 }
 
 // database selection menu
@@ -109,7 +178,6 @@ function colorNodesOnClick(){
 		}
 	}
 }
-
 function updateToggleLabel(value) {
 	highlightMode.classList.remove('state-0', 'state-1', 'state-2');
 	highlightMode.classList.add(`state-${value}`);
@@ -212,6 +280,12 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	});
 	
+	document.getElementById('Isolate').addEventListener('click', () => {
+		if (clickedNode.data('class') == 'table');
+		fetchData('graph-data/tabledef', 'db', dbSelector.value, 'id', clickedNode.data('name'))
+		.then(data => buildGraph(data, 'classGraph'));			
+	});
+
 	document.getElementById('run').addEventListener('click', () => {
 		fetchData('graph-data/tabledef', 'db', dbSelector.value).then(data => {
 			data.nodes.forEach(item => {
@@ -220,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				option.textContent = item.ID + " (" + item.OBJECTS + ")";
 				tableSelector.appendChild(option);
 			});
-		}).then(() => fetchData(dbSelector.value, 'graph-data')).then(data => buildGraph(data, 'objectGraph'));
+		}).then(() => fetchData('graph-data', 'db', dbSelector.value)).then(data => buildGraph(data, 'objectGraph'));
 	});
 });
 
@@ -230,7 +304,7 @@ function buildGraphData(data, graphType){
 	if (graphType == 'classGraph') {
 		nodes = data.nodes.map(node => {
 			return {
-				group: 'nodes', data: {"id": node.ID, name: node.ID, label: node.ID, class: 'table'}
+				group: 'nodes', data: {"id": node.ID, name: node.ID, label: node.ID, objects: node.OBJECTS, class: 'table'}
 			};
 		});
 		edges = data.edges.map(edge => {
@@ -355,7 +429,12 @@ const graphProperties = {
 		'line-color': '#ff9999',
 		'target-arrow-color': '#ff9999'
 	},
-	onClickEdge:  function(evt) {clickedNode = evt.target; colorNodesOnClick();},
-	onClickNode:  function(evt) {clickedNode = evt.target; colorNodesOnClick();
-		if (evt.target.class == 'object') fetcData('graph-data/node', 'db', dbSelector.value, 'id', clickedNode.id()).then(data => {displayInfo(data)});}
+	onClickEdge:  function(evt) {
+		clickedNode = evt.target;
+		colorNodesOnClick();},
+	onClickNode:  function(evt) {
+		clickedNode = evt.target;
+		colorNodesOnClick();
+		if (clickedNode.data('class') == 'object') fetchData('graph-data/node', 'db', dbSelector.value, 'id', clickedNode.id()).then(data => {displayInfoObject(data)});
+		else if (clickedNode.data('class') == 'table') fetchData('graph-data/tabledef', 'db', dbSelector.value, 'id', clickedNode.id()).then(data => {displayInfoTable(data)});}
 }

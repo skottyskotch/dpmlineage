@@ -17,15 +17,11 @@ html, body {
 	background-color: transparent;
 }
 
-#node-info {
-	font-family: monospace;
-	padding-top: 10px;
-	width: 20%;
-	height: 100%;
-	float: left;
+#info {
+	style="margin-left: 30px;
 }
 
-#infos {
+.infodata {
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 4px 12px;
@@ -44,11 +40,22 @@ html, body {
 	background-color: yellow !important;
 }
 
-#title {
+.title {
 	font-weight: bold;
 	font-family: monospace;
 	margin-top: 10px;
+	text-align: center;
 	background-color: #f0f0f0;
+}
+.infoSection {
+	display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 12px;
+	text-align: left;
+    font-family: monospace;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    margin-top: 5px;
 }
 
 .right-pane {

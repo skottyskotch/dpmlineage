@@ -34,8 +34,8 @@ var sQueryEdges = "with cte as (select ID, TYPE from nodes where type = '{0}') s
 const sQueryTabledefNodes = "select ID, OBJECTS from TABLEDEF;";
 const sQueryTabledefEdges = "with cte as (select distinct d.id as source, e.id as target , count(*) as number_of_edges from edges a join nodes b on a.source =b.id join nodes c on a.target = c.id join tabledef d on b.type = d.id join tabledef e on c.type = e.id group by d.id, e.id), sumcte as (select cte.source, sum(number_of_edges) as number_of_connections from cte group by source) select cte.source as SOURCE, cte.target as TARGET, cte.number_of_edges as number_of_edges, sumcte.number_of_connections from cte left join sumcte on cte.source = sumcte.source order by number_of_connections desc;";
 // filter on one tabledef and connected ("isolate tabledef")
-var sQueryTableDefObjectNodes = "with tablelinks as (SELECT n1.type AS type1, n2.type AS type2 FROM edges l JOIN nodes n1 ON l.source = n1.id JOIN nodes n2 ON l.target = n2.id WHERE (n1.type = '{0}' OR n2.type = '{0}') GROUP BY n1.type, n2.type),tables as (select type1 as type from tablelinks union select type2 as type from tablelinks) select a.type as ID, b.OBJECTS from tables a left join tabledef b on a.type = b.id;"
-var sQueryTableDefObjectEdges = "SELECT n1.type AS type1, n2.type AS type2, COUNT(*) AS number_of_links FROM edges l JOIN nodes n1 ON l.source = n1.id JOIN nodes n2 ON l.target = n2.id WHERE (n1.type = '{0}' OR n2.type = '{0}') GROUP BY n1.type, n2.type ORDER BY number_of_links DESC;"
+var sQueryTableDefObjectNodes = "with tablelinks as (SELECT n1.type AS SOURCE, n2.type AS TARGET FROM edges l JOIN nodes n1 ON l.source = n1.id JOIN nodes n2 ON l.target = n2.id WHERE (n1.type = '{0}' OR n2.type = '{0}') GROUP BY n1.type, n2.type),tables as (select SOURCE as type from tablelinks union select TARGET as type from tablelinks) select a.type as ID, b.OBJECTS from tables a left join tabledef b on a.type = b.id;"
+var sQueryTableDefObjectEdges = "SELECT n1.type AS SOURCE, n2.type AS TARGET, COUNT(*) AS number_of_edges FROM edges l JOIN nodes n1 ON l.source = n1.id JOIN nodes n2 ON l.target = n2.id WHERE (n1.type = '{0}' OR n2.type = '{0}') GROUP BY n1.type, n2.type ORDER BY number_of_edges DESC;"
 
 const dbFolder = '../output/';
 let hDatabases = {};
@@ -153,9 +153,8 @@ app.get('/api/graph-data/class', (req,res) => {
 
 app.get('/api/graph-data/tabledef', (req,res) => {
 	if (req.query.db) {
-		let sQuery1 = sQueryTabledefNodes;
+		let sQueryNodes = sQueryTabledefNodes;
 		let sQueryEdges = sQueryTabledefEdges;
-		console.log(req.query);
 		if (req.query.id) {
 			sQueryNodes = format(sQueryTableDefObjectNodes, req.query.id);
 			sQueryEdges = format(sQueryTableDefObjectEdges, req.query.id);
