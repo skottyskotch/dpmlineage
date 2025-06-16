@@ -79,7 +79,7 @@ function displayInfo(data){
 // database selection menu
 dbSelector.addEventListener('change', (event) => {
 	const selectedValue = event.target.value;
-	fetchTabledef(selectedValue).then(data => {buildGraph(data,'classGraph');});
+	fetchData('graph-data/tabledef', 'db', selectedValue).then(data => {buildGraph(data,'classGraph');});
 });
 
 // coloration mode for links targets/sources
@@ -123,52 +123,29 @@ slider.oninput = function() {
 	updateToggleLabel(this.value);
 };
 
-// ******* API functionshy
-
-async function retrieveDbFromSession(){
-    query = 'http://localhost:3000/api/databaseSelected'
+// ******* API function
+async function fetchData(endpoint, ...args){
+	let sParams = '';
+	if (args.length > 0 && args.length % 2 == 0) {
+		const params = [];
+		for (let i = 0; i < args.length; i += 2) {
+			const key = args[i];
+			const value = args[i+1];
+			params.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
+		}
+		sParams = '?'+params.join('&');
+	}
+	const query = 'http://localhost:3000/api/' + endpoint + sParams;
     console.log(query);
     const response = await fetch(query);
     const data = await response.json();
     return data;
-}
-
-async function fetchDatabases(){ // list the available databases on the server
-    query = 'http://localhost:3000/api/database'
-    console.log(query);
-    const response = await fetch(query);
-    const data = await response.json();
-    return data;
-}
-
-async function fetchData(db){ // retrieve full nodes + edges of the db
-    const query = 'http://localhost:3000/api/graph-data?db=' + db;
-    console.log(query);
-	const response = await fetch(query);
-	const data = await response.json();
-	return data;
-}
-
-async function fetchTabledef(db){ // retrieve the tabledefs of the db
-	query = 'http://localhost:3000/api/graph-data/tabledef?db=' + db;
-	console.log(query);
-	const response = await fetch(query);
-	const data = await response.json();
-	return data;
-}
-
-async function fetchNodeForInfo(db,id){ // retrieve a single node to display informations
-    const query = 'http://localhost:3000/api/graph-data/node?db='+db+'&id='+id;
-    console.log(query);
-	const response = await fetch(query);
-	const data = await response.json();
-	return data;
 }
 
 // page INIT
 document.addEventListener('DOMContentLoaded', function() {
 	// database picklist - init
-    fetchDatabases().then(data => {
+    fetchData('database').then(data => {
         data.databases.forEach(item => {
             const option = document.createElement('option');
             option.value = item;
@@ -178,10 +155,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
 	// draw first graph
-	retrieveDbFromSession()
+	fetchData('databaseSelected')
 	.then(data => {if (data.selectedDb) dbSelector.value = data.selectedDb;})
 	.then(data => {
-		if (dbSelector.value != "" && cy == undefined) fetchTabledef(dbSelector.value).then(data => {buildGraph(data,'classGraph');});
+		if (dbSelector.value != "" && cy == undefined) fetchData('graph-data/tabledef', 'db', dbSelector.value).then(data => {buildGraph(data,'classGraph');});
 		updateToggleLabel(slider.value);
 	})
 	
@@ -229,21 +206,21 @@ document.addEventListener('DOMContentLoaded', function() {
 			if (key == '4') {
 				cy.elements().remove();
 				if (dbSelector.value != "") {
-					fetchTabledef(dbSelector.value).then(data => {buildGraph(data,'classGraph');});
+					fetchData('graph-data/tabledef', 'db', dbSelector.value).then(data => {buildGraph(data,'classGraph');});
 				}
 			}
 		}
 	});
 	
 	document.getElementById('run').addEventListener('click', () => {
-		fetchTabledef(dbSelector.value).then(data => {
+		fetchData('graph-data/tabledef', 'db', dbSelector.value).then(data => {
 			data.nodes.forEach(item => {
 				const option = document.createElement('option');
 				option.value = item.ID;
 				option.textContent = item.ID + " (" + item.OBJECTS + ")";
 				tableSelector.appendChild(option);
 			});
-		}).then(() => fetchData(dbSelector.value)).then(data => buildGraph(data, 'objectGraph'));
+		}).then(() => fetchData(dbSelector.value, 'graph-data')).then(data => buildGraph(data, 'objectGraph'));
 	});
 });
 
@@ -380,5 +357,5 @@ const graphProperties = {
 	},
 	onClickEdge:  function(evt) {clickedNode = evt.target; colorNodesOnClick();},
 	onClickNode:  function(evt) {clickedNode = evt.target; colorNodesOnClick();
-		if (evt.target.class == 'object') fetchNodeForInfo(dbSelector.value,clickedNode.id()).then(data => {displayInfo(data)});}
+		if (evt.target.class == 'object') fetcData('graph-data/node', 'db', dbSelector.value, 'id', clickedNode.id()).then(data => {displayInfo(data)});}
 }

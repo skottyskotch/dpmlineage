@@ -6,12 +6,6 @@ const fs = require('fs');
 const app = express();
 const port = 3000;
 
-function format(str, ...values) {
-  return str.replace(/{(\d+)}/g, function(match, index) {
-    return typeof values[index] !== 'undefined' ? values[index] : match;
-  });
-}
-
 app.use(express.urlencoded({ extended: true }));
 app.use(session({
   secret: 'whatsthesecret?',
@@ -32,10 +26,16 @@ var sSampleQueryEdges = "with cte as (select * from nodes limit 500) select SOUR
 // var sQueryNodes = "with recursive subgraph(id, depth) as (select id, 0 from nodes where type = '{0}' union all select edges.source, subgraph.depth + 1 from edges join subgraph on edges.target = subgraph.id where subgraph.depth < {1})select ID, TYPE from nodes where id in (select id from subgraph);";
 var sQueryNodes = "select ID, NAME, TYPE from nodes where type = '#%TEMP-TABLE:_SC_PT_REPORTING:';";
 // var sQueryEdges = "with recursive subgraph(id, depth) as (select id, 0 from nodes where type = '{0}' union all select edges.source, subgraph.depth + 1 from edges join subgraph on edges.target = subgraph.id where subgraph.depth < {1}),cte_node as (select ID from nodes where id in (select id from subgraph))select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where source in (select * from cte_node) and target in (select * from cte_node);";
+// TABLEDEF api:
+// -- tablename | number of objects
+// -- source table | target table | number of links
 var sQueryEdges = "with cte as (select ID, TYPE from nodes where type = '{0}') select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where SOURCE in (select ID from cte) and TARGET in (select ID from cte);";
-var sQueryTabledefNodes = "select ID, OBJECTS from TABLEDEF;";
-// var sQueryTabledefEdges = "select distinct d.id as SOURCE, e.id as TARGET, count(*) as number_of_edges from edges a join nodes b on a.source =b.id join nodes c on a.target = c.id join tabledef d on b.type = d.id join tabledef e on c.type = e.id group by d.id, e.id order by count(*) desc;";
-var sQueryTabledefEdges = "with cte as (select distinct d.id as source, e.id as target , count(*) as number_of_edges  from edges a join nodes b on a.source =b.id join nodes c on a.target = c.id join tabledef d on b.type = d.id join tabledef e on c.type = e.id group by d.id, e.id), sumcte as (select cte.source, sum(number_of_edges) as number_of_connections from cte group by source) select cte.source as SOURCE, cte.target as TARGET, cte.number_of_edges as number_of_edges, sumcte.number_of_connections from cte left join sumcte on cte.source = sumcte.source order by number_of_connections desc;";
+// no filter ("all tabledef")
+const sQueryTabledefNodes = "select ID, OBJECTS from TABLEDEF;";
+const sQueryTabledefEdges = "with cte as (select distinct d.id as source, e.id as target , count(*) as number_of_edges from edges a join nodes b on a.source =b.id join nodes c on a.target = c.id join tabledef d on b.type = d.id join tabledef e on c.type = e.id group by d.id, e.id), sumcte as (select cte.source, sum(number_of_edges) as number_of_connections from cte group by source) select cte.source as SOURCE, cte.target as TARGET, cte.number_of_edges as number_of_edges, sumcte.number_of_connections from cte left join sumcte on cte.source = sumcte.source order by number_of_connections desc;";
+// filter on one tabledef and connected ("isolate tabledef")
+var sQueryTableDefObjectNodes = "with tablelinks as (SELECT n1.type AS type1, n2.type AS type2 FROM edges l JOIN nodes n1 ON l.source = n1.id JOIN nodes n2 ON l.target = n2.id WHERE (n1.type = '{0}' OR n2.type = '{0}') GROUP BY n1.type, n2.type),tables as (select type1 as type from tablelinks union select type2 as type from tablelinks) select a.type as ID, b.OBJECTS from tables a left join tabledef b on a.type = b.id;"
+var sQueryTableDefObjectEdges = "SELECT n1.type AS type1, n2.type AS type2, COUNT(*) AS number_of_links FROM edges l JOIN nodes n1 ON l.source = n1.id JOIN nodes n2 ON l.target = n2.id WHERE (n1.type = '{0}' OR n2.type = '{0}') GROUP BY n1.type, n2.type ORDER BY number_of_links DESC;"
 
 const dbFolder = '../output/';
 let hDatabases = {};
@@ -109,7 +109,7 @@ app.get('/api/graph-data/node', (req,res) => {
 			let sQuery = "SELECT ATTRIBUTES, DATA, TYPE from nodes where ID = " + req.query.id + ";";
 			db.all(sQuery, (err, node) => {
 				if (err) {
-					if (err.message = "SQLITE_ERROR: no such column: undefined") err.message += ". Valid request is like /api/graph-data/node?ID=...";
+					if (err.message = "SQLITE_ERROR: no such column: undefined") err.message += ". Valid request is like /api/graph-data/node?db=databasename&ID=nodeid";
 					res.status(400).json({"error": err.message});
 					return;
 				}
@@ -153,16 +153,23 @@ app.get('/api/graph-data/class', (req,res) => {
 
 app.get('/api/graph-data/tabledef', (req,res) => {
 	if (req.query.db) {
+		let sQuery1 = sQueryTabledefNodes;
+		let sQueryEdges = sQueryTabledefEdges;
+		console.log(req.query);
+		if (req.query.id) {
+			sQueryNodes = format(sQueryTableDefObjectNodes, req.query.id);
+			sQueryEdges = format(sQueryTableDefObjectEdges, req.query.id);
+		}
 		req.session.selection = req.query.db;
 		if (hDatabases[req.query.db] != undefined) {
 			let db = hDatabases[req.query.db];
 			db.serialize(() => {
-				db.all(sQueryTabledefNodes, (err, nodes) => {
+				db.all(sQueryNodes, (err, nodes) => {
 					if (err) {
 						res.status(400).json({"error nodes": err.message});
 						return;
 					}
-					db.all(sQueryTabledefEdges, (err, edges) => {
+					db.all(sQueryEdges, (err, edges) => {
 						if (err) {
 							res.status(400).json({"error edges": err.message});
 							return;
