@@ -1,24 +1,21 @@
-* {
-	margin: 0;
-	font-family: sans-serif;
-	padding: 0;
-}
-
 html, body {
 	height: 100%;
 }
 
 #cy {
-	font-family: monospace;
-	padding-top: 10px;
+	position: relative;
+	padding: 0;
+	margin: 0;
 	width: 100%;
 	height: 100%;
-	float: left;
+	overflow: hidden;
+	/* float: left; */
 	background-color: transparent;
+	font-family: monospace;
 }
 
 #info {
-	style="margin-left: 30px;
+	margin-left: 30px;
 }
 
 .infodata {
@@ -33,7 +30,7 @@ html, body {
 .highlight-green {
     background-color: lightgreen;
 }
-.highlight-blue {
+/* .highlight-blue { */
     background-color: lightblue;
 }
 .highlight-yellow {
@@ -52,14 +49,20 @@ html, body {
     grid-template-columns: auto 1fr;
     gap: 4px 12px;
 	text-align: left;
-    font-family: monospace;
+	font-weight: 500;
     background-color: #f0f0f0;
     border-radius: 5px;
     margin-top: 5px;
 }
 
-.right-pane {
-	margin-left: 20px;
+.right-panel-container {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+}
+
+.right-panel {
 	width: 300px;
 	height: 100vh;
 	background: #ffffff;
@@ -70,12 +73,12 @@ html, body {
 	top: 0;
 	right: 0;
 	z-index: 100;
-	overflow-y: auto;
+	overflow: hidden;
 }
-.right-pane.collapsed {
+.right-panel.collapsed {
 	transform: translateX(90%);
 }
-.right-pane.expanded {
+.right-panel.expanded {
 	transform: translateX(0);
 }
 .resizer {
@@ -86,6 +89,19 @@ html, body {
 	height: 100%;
 	cursor: ew-resize;
 	background-color: transparent; /* optionnel : #ccc pour visibilité */
+}
+
+.vertical-label {
+  position: relative;
+  left: 0px;
+  top: 90%;
+  transform: rotate(-90deg) translateY(-110%);
+  transform-origin: left center;
+  /* background: #ccc; */
+  /* padding: 5px 10px; */
+  /* font-weight: bold; */
+  /* cursor: pointer; */
+  /* white-space: nowrap; */
 }
 
 #actuators {

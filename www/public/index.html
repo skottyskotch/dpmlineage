@@ -25,13 +25,17 @@
 		<button id="admin" style="padding: 10px 12px; border-radius: 4px; background-color: #007BFF; color: white; border: none;" onclick="window.location.href='/autre-page'">Admin</button>
 	</div>
 	<div id="cy"><h2>Planisware configuration graph</h2></div>
-	<!-- <div id="node-info"><h2>Click a node for more information.</h2></div> -->
-	<div id="rightPane" class="right-pane collapsed">
-		<div id="resizer" class="resizer"></div>
-		<button id="toggleBtn" class="toggle-button" onclick="togglePane()">⮜</button>
-		<div id = "permaText" style="margin-left: 30px;">
-			<h2>Information</h2>
-			<p>Click a node for more information.</p>
+		<!-- <div id="node-info"><h2>Click a node for more information.</h2></div> -->
+		<div class="right-panel-container">
+		<div id="rightPanel" class="right-panel collapsed">
+			<button id="toggleBtn" class="toggle-button" onclick="togglePane()">⮜</button>
+			<div id="resizer" class="resizer"></div>
+			<div class="vertical-label" id="sideText" style="margin-left: 30px;">
+				<p>Click a node for more information</p>
+			</div>
+			<div id = "permaText" style="margin-left: 30px;">
+				<p>Click a node for more information</p>
+			</div>
 		</div>
 	</div>
 

@@ -28,7 +28,7 @@ var sQueryNodes = "select ID, NAME, TYPE from nodes where type = '#%TEMP-TABLE:_
 // TABLEDEF api:
 // -- tablename | number of objects
 // -- source table | target table | number of links
-var sQueryEdges = "with cte as (select ID, TYPE from nodes where type = '{0}') select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where SOURCE in (select ID from cte) and TARGET in (select ID from cte);";
+var sQueryEdges = "with cte as (select ID, TYPE from nodes where type = '#%TEMP-TABLE:_SC_PT_REPORTING:') select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where SOURCE in (select ID from cte) or TARGET in (select ID from cte);";
 // no filter ("all tabledef")
 const sQueryTabledefNodes = "select ID, OBJECTS from TABLEDEF;";
 const sQueryTabledefEdges = "with cte as (select distinct d.id as source, e.id as target , count(*) as number_of_edges from edges a join nodes b on a.source =b.id join nodes c on a.target = c.id join tabledef d on b.type = d.id join tabledef e on c.type = e.id group by d.id, e.id), sumcte as (select cte.source, sum(number_of_edges) as number_of_connections from cte group by source) select cte.source as SOURCE, cte.target as TARGET, cte.number_of_edges as number_of_edges, sumcte.number_of_connections from cte left join sumcte on cte.source = sumcte.source order by number_of_connections desc;";
@@ -71,13 +71,15 @@ app.get('/api/graph-data', (req, res) => {
         if (hDatabases[req.query.db] != undefined) {
             var db = hDatabases[req.query.db];
             db.serialize(() => {
-				const sQuery1 = format(sQueryNodes,tableDefFilter,depth);
+				// const sQuery1 = format(sQueryNodes,tableDefFilter,depth);
+				const sQuery1 = sQueryNodes;
                 db.all(sQuery1, (err, _nodes) => {
                     if (err) {
                         res.status(400).json({"error": err.message});
                         return;
                     }
-					const sQuery2 = format(sQueryEdges,tableDefFilter,depth);
+					// const sQuery2 = format(sQueryEdges,tableDefFilter,depth);
+					const sQuery2 = sQueryEdges;
                     db.all(sQuery2, (err, _edges) => {
                         if (err) {
                             res.status(400).json({"error": err.message});

@@ -9,7 +9,7 @@ const highlightMode = document.getElementById('highlightMode');
 // ******* UI functions
 
 // right panel
-const panel = document.getElementById('rightPane');
+const panel = document.getElementById('rightPanel');
 function togglePane() {
 	const button = document.getElementById('toggleBtn');
 	panel.classList.toggle('collapsed');
@@ -41,7 +41,7 @@ function displayInfoObject(data){
 	var values = data.node[0].DATA.split('|');
 	var title = data.node[0].TYPE;
 	
-	const panel = document.getElementById('rightPane');
+	const panel = document.getElementById('rightPanel');
 	
     const oldInfo = document.getElementById('info');
     if (oldInfo) oldInfo.remove();
@@ -78,11 +78,11 @@ function displayInfoObject(data){
         newDiv.appendChild(value);
     }
 
-    document.getElementById('rightPane').appendChild(newDiv);
+    document.getElementById('rightPanel').appendChild(newDiv);
 }
 
 function displayInfoTable(data){
-	const panel = document.getElementById('rightPane');
+	const panel = document.getElementById('rightPanel');
 	
     const oldInfo = document.getElementById('info');
     if (oldInfo) oldInfo.remove();
@@ -106,7 +106,7 @@ function displayInfoTable(data){
 	const sectionTitle1 = document.createElement('div');
 	newInfo.appendChild(sectionTitle1);
 	sectionTitle1.className = 'title';
-	sectionTitle1.textContent = "Used by:";
+	sectionTitle1.textContent = "Used by";
 	
 	const infoDiv1 = document.createElement('div');
 	infoDiv1.className = 'infoSection';
@@ -188,12 +188,12 @@ function updateToggleLabel(value) {
 
 function colorButtons(){
 	if (clickedNode) {
-		document.getElementById("Isolate").backgroundColor = "#007BFF";
-		document.getElementById("Expand").backgroundColor = "#007BFF";
+		document.getElementById("Isolate").style.backgroundColor = "#007BFF";
+		document.getElementById("Expand").style.backgroundColor = "#007BFF";
 	}
 	else {
-		document.getElementById("Isolate").backgroundColor = "#ccc";
-		document.getElementById("Expand").backgroundColor = "#ccc";
+		document.getElementById("Isolate").style.backgroundColor = "#ccc";
+		document.getElementById("Expand").style.backgroundColor = "#ccc";
 	}
 }
 
