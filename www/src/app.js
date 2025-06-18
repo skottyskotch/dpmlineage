@@ -2,7 +2,7 @@ let cy;
 const dbSelector = document.getElementById('dbSelector');
 const tableSelector = document.getElementById('tableSelector');
 let clickedNode;
-let clickedExpansion = 0;
+let clickedNodeExpansion = 0;
 let state = 0;
 const highlightMode = document.getElementById('highlightMode');
 
@@ -304,15 +304,17 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	});
 
-	document.getElementById('Full').addEventListener('click', () => {
-		fetchData('graph-data/tabledef', 'db', dbSelector.value).then(data => {
-			data.nodes.forEach(item => {
-				const option = document.createElement('option');
-				option.value = item.ID;
-				option.textContent = item.ID + " (" + item.OBJECTS + ")";
-				tableSelector.appendChild(option);
-			});
-		}).then(() => fetchData('graph-data', 'db', dbSelector.value)).then(data => buildGraph(data, 'objectGraph'));
+	document.getElementById('Expand').addEventListener('click', () => {
+		if (clickedNode.data('class') == 'table') {
+			fetchData('graph-data/node', 'db', dbSelector.value, 'id', clickedNode.data('id')).then(data => {
+				data.nodes.forEach(item => {
+					const option = document.createElement('option');
+					option.value = item.ID;
+					option.textContent = item.ID + " (" + item.OBJECTS + ")";
+					tableSelector.appendChild(option);
+				});
+			}).then(() => fetchData('graph-data', 'db', dbSelector.value)).then(data => buildGraph(data, 'objectGraph'));
+		}
 	});
 });
 
@@ -322,7 +324,7 @@ function buildGraphData(data, graphType){
 	if (graphType == 'classGraph') {
 		nodes = data.nodes.map(node => {
 			return {
-				group: 'nodes', data: {"id": node.ID, name: node.ID, label: node.ID, objects: node.OBJECTS, class: 'table'}
+				group: 'nodes', data: {"id": node.ID, name: node.ID, label: node.ID.replace(/^[^:]*:/,'').replace(/:$/,''), objects: node.OBJECTS, class: 'table'}
 			};
 		});
 		edges = data.edges.map(edge => {
@@ -335,7 +337,7 @@ function buildGraphData(data, graphType){
 		nodes = data.nodes.map(node => {
 			var sType = node.type.replace(/^[^:]*/,'');
 			return {
-				group: 'nodes', data: {id: node.id, name: node.name, label: node.id+"\n"+node.type.replace(/^[^:]*:/,'').replace(':',''), class: 'object'}
+				group: 'nodes', data: {id: node.id, name: node.name, label: node.id+"\n"+node.type.replace(/^[^:]*:/,'').replace(':',''), type: node.type, class: 'object'}
 			};
 		});
 		edges = data.edges.map(edge => {
@@ -347,6 +349,20 @@ function buildGraphData(data, graphType){
 		});
 	}
 	return [nodes, edges];
+}
+
+function expandNode(data, clickedNode){
+	console.log('expandNode("'+node+'")');
+	const nodeA = clickedNode;
+	
+	const [newNodes, newEdges] = buildGraphData(data, graphType);
+	newEdges.forEach(e => {
+		// si la source ou la cible ne sont pas dans le graphe, chercher si la table est dans le graphe
+		const source = cy.getElementById(e.source);
+		const target = cy.getElementById(e.target);
+		if (source.empty()){
+			// trouver le type du noeud qui à pour ID cette source dans la liste newNodes
+		}
 }
 
 function buildGraph(data, graphType) {
