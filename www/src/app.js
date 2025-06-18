@@ -148,7 +148,9 @@ function displayInfoTable(data){
 // database selection menu
 dbSelector.addEventListener('change', (event) => {
 	const selectedValue = event.target.value;
-	fetchData('graph-data/tabledef', 'db', selectedValue).then(data => {buildGraph(data,'classGraph');});
+	fetchData('graph-data/tabledef', 'db', selectedValue)
+	.then(data => buildGraphData(data, 'classGraph'))
+	.then(data => buildGraph(data));
 });
 
 // coloration mode for links targets/sources
@@ -237,7 +239,10 @@ document.addEventListener('DOMContentLoaded', function() {
 	fetchData('databaseSelected')
 	.then(data => {if (data.selectedDb) dbSelector.value = data.selectedDb;})
 	.then(data => {
-		if (dbSelector.value != "" && cy == undefined) fetchData('graph-data/tabledef', 'db', dbSelector.value).then(data => {buildGraph(data,'classGraph');});
+		if (dbSelector.value != "" && cy == undefined) 
+			fetchData('graph-data/tabledef', 'db', dbSelector.value)
+			.then(data => buildGraphData(data, 'classGraph'))
+			.then(data => buildGraph(data));
 		updateToggleLabel(slider.value);
 	})
 	
@@ -285,7 +290,9 @@ document.addEventListener('DOMContentLoaded', function() {
 			if (key == '4') {
 				cy.elements().remove();
 				if (dbSelector.value != "") {
-					fetchData('graph-data/tabledef', 'db', dbSelector.value).then(data => {buildGraph(data,'classGraph');});
+					fetchData('graph-data/tabledef', 'db', dbSelector.value)
+					.then(data => buildGraphData(data, 'classGraph'))
+					.then(data => buildGraph(data));
 				}
 			}
 		}
@@ -295,7 +302,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (clickedNode != undefined) {
 			if (clickedNode.data('class') == 'table') {
 				fetchData('graph-data/tabledef', 'db', dbSelector.value, 'id', clickedNode.data('name'))
-				.then(data => buildGraph(data, 'classGraph'));
+				.then(data => buildGraphData(data, 'classGraph'))
+				.then(data => buildGraph(data));
 			}
 			else if (clickedNode.data('class') == 'object') {
 				clickedNodeExpansion += 1;
@@ -307,8 +315,8 @@ document.addEventListener('DOMContentLoaded', function() {
 	document.getElementById('Expand').addEventListener('click', () => {
 		if (clickedNode.data('class') == 'table') {
 			fetchData('graph-data/node', 'db', dbSelector.value, 'table', clickedNode.data('id'))
-			// .then(data => expandNode(data, clickedNode));
-			.then(data => expandNode(data, clickedNode));
+			.then(data => expandNode(data, clickedNode))
+			.then(data => addElementGraph(data));
 		}
 	});
 });
@@ -317,6 +325,7 @@ function buildGraphData(data, graphType){
 	let nodes = {}
 	let edges = {}
 	if (graphType == 'classGraph') {
+		console.log('classGraph');
 		nodes = data.nodes.map(node => {
 			return {
 				group: 'nodes', data: {"id": node.ID, name: node.ID, label: node.ID.replace(/^[^:]*:/,'').replace(/:$/,''), objects: node.OBJECTS, class: 'table'}
@@ -348,59 +357,73 @@ function buildGraphData(data, graphType){
 
 function expandNode(data, clickedNode){
 	console.log('expandNode("'+clickedNode.data('name')+'")');
-	
-	const [newNodes, newEdges] = buildGraphData(data, 'objectGraph');
-	console.log(newEdges);
-	let edges = [];
-	newEdges.forEach(e => {
-		if (cy.getElementById(e.source).nonempty() && cy.getElementById(e.target).nonempty()) edges.push(e);
+	clickedNode.hide();
+	// clickedNode = undefined;
+	const [newNodes, edges] = buildGraphData(data, 'objectGraph');
+	let newEdges = [];
+	newNodes.forEach(n => {
+		n.data.added = true;
+	});
+	edges.forEach(e => {
+		if (cy.getElementById(e.source).nonempty() && cy.getElementById(e.target).nonempty()) newEdges.push(e);
 		else {
-			let elt = {
-				group: 'edges', 
-				data: {
-					id: e.source + '_' + e.target, 
-					source: e.source, 
-					source_type: e.source_type, 
-					target: e.target, 
-					target_type: e.target_type, 
-					inattr: e.inattr, 
-					label: e.inattr.substring(1) + foundby
-				}
-			}
 			let source = undefined;
 			let target = undefined;
 			let cancel = false;
-			if (cy.getElementById(e.source).empty() {
+			if (cy.getElementById(e.source).empty()) {
 				if (cy.getElementById(e.source_type).nonempty()) {
 					elt.data.source = e.source_type;
 					elt.data.id = elt.data.source + '_' + elt.data.target;
+				}
 				else cancel = true;
 			}
 			if (cy.getElementById(e.target).empty()) {
 				if (cy.getElementById(e.target_type).nonempty()) target = e.target_type;
 				else cancel = true;
 			}
+			if (!cancel) {
+				var foundby = ' (name)';
+				if (e.data.byname == 'FALSE') foundby = ' (ONB)';
+				let elt = {
+					group: 'edges', 
+					data: {
+						id: e.data.source + '_' + e.data.target, 
+						source: e.data.source, 
+						source_type: e.data.source_type, 
+						target: e.data.target, 
+						target_type: e.data.target_type, 
+						inattr: e.data.inattr, 
+						label: e.data.inattr.substring(1) + foundby,
+						added: true
+					}
+				}
+				newEdges.push(elt);
+			}
 		}
 	});
+	return [newNodes, newEdges];
 }
-// class: "object"
-// id: "142736163641"
-// label: "142736163641\n_L1_PT_DCR"
-// name: "SAN_RDPM_DMR_RES_TYP_MOV_IN"
-// type: "#%TEMP-TABLE:_L1_PT_DCR:"
+function addElementGraph(data){
+	console.log('adding elements in Graph');
+	const [nodes, edges] = data;
+	if (cy) {
+		cy.add(nodes);
+		cy.add(edges);
+	}
+	const addedElements = cy.elements('[added="true"]');  
+	cy.layout({
+		name: 'circle',
+		fit: true,
+		animate: true,
+		nodes: addedElements
+	}).run();
+}
 
-// class
-// id: "260010105770_317320389341"
-// inattr: ":_L1_AA_S_CLASS_FILTER"
-// label: "_L1_AA_S_CLASS_FILTER (name)"
-// source: "260010105770"
-// target: "317320389341"
-
-function buildGraph(data, graphType) {
-	console.log('buildgraph("'+graphType+'")');
-	const [nodes, edges] = buildGraphData(data, graphType);
+function buildGraph(data) {
+	console.log('buildgraph');
+	const [nodes, edges] = data;
 	cy = cytoscape({
-		container: document.getElementById('cy'), // container to render in
+		container: document.getElementById('cy'),
 		elements: {nodes: nodes, edges: edges},
 		style: graphProperties.style,
 		layout: graphProperties.classGraphLayout
@@ -409,9 +432,10 @@ function buildGraph(data, graphType) {
 	cy.on('click', 'node', graphProperties.onClickNode);
 	
 	// to finish
-	cy.on('mousedown', 'edge', function(evt) {
+	/*cy.on('mousedown', 'edge', function(evt) {
 		if (graphType != 'classGraph'){
 			const edge = evt.target;
+			if (evt.
 			const inattr = edge.data('inattr').replace(':','');
 			document.querySelectorAll(`.kv-${inattr}`).forEach(el => {
 				el.classList.add('highlight-yellow');
@@ -425,7 +449,7 @@ function buildGraph(data, graphType) {
 				el.classList.remove('highlight-yellow');
 			});
 		}
-	});
+	});*/
 }
 
 const breadthfirstLayout = {
