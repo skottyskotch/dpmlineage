@@ -24,8 +24,8 @@ var depth = 1;
 // Objects api
 var sNodesFull = "select ID, NAME, TYPE from nodes;";
 var sEdgeFull = "with cte as (select ID from nodes) select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where SOURCE in (select ID from cte) or TARGET in (select ID from cte);";
-var sNodesFromOneTable = "select ID, NAME, TYPE from nodes where type in ('{0})';";
-var sEdgeFromOneTable = "with cte as (select ID from nodes where type in ('{0}')) select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where SOURCE in (select ID from cte) or TARGET in (select ID from cte);";
+var sNodesFromOneTable = "select ID, NAME, TYPE from nodes where type in ('{0}');";
+var sEdgesFromOneTable = "with cte as (select ID from nodes where type in ('{0}'))select a.SOURCE, b.TYPE as SOURCE_TYPE, a.TARGET, c.TYPE as TARGET_TYPE, INATTRIBUTE, BYNAME from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where SOURCE in (select ID from cte) or TARGET in (select ID from cte);";
 
 // TABLEDEF api:
 // -- tablename | number of objects
@@ -115,20 +115,20 @@ app.get('/api/graph-data/node', (req,res) => {
 		req.session.selection = req.query.db;
 		if (hDatabases[req.query.db] != undefined) {
 			let db = hDatabases[req.query.db];
-			db.serialize(() => {			
-				db.all(sQueryNodes, (err, node) => {
+			db.serialize(() => {
+				db.all(sQueryNodes, (err, _nodes) => {
 					if (err) {
 						if (err.message = "SQLITE_ERROR: no such column: undefined") err.message += ". Valid request is like /api/graph-data/node?db=databasename&ID=nodeid";
 						res.status(400).json({"error": err.message});
 						return;
 					}
-					db.all(sQueryEdges, (err, edges) => {
+					db.all(sQueryEdges, (err, _edges) => {
 						if (err) {
 							res.status(400).json({"error edges": err.message});
 							return;
 						}
-						const _nodes = nodes.map(node => ({id: node.ID, objects: nodes.OBJECTS}))
-						const _edges = edges.map(edge => ({id: edge.Id, source: edge.SOURCE, target: edge.TARGET}))
+						const nodes = _nodes.map(node => ({id: node.ID, name: node.NAME, type: node.TYPE}))
+						const edges = _edges.map(edge => ({id: edge.Id, source: edge.SOURCE, source_type: edge.SOURCE_TYPE, target: edge.TARGET, target_type: edge.TARGET_TYPE, inattr: edge.INATTRIBUTE, byname: edge.BYNAME}))
 						res.json({nodes, edges});
 					});
 				});

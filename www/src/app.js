@@ -299,21 +299,16 @@ document.addEventListener('DOMContentLoaded', function() {
 			}
 			else if (clickedNode.data('class') == 'object') {
 				clickedNodeExpansion += 1;
-				fetchData('graph-data/nodeIsolation', 'db', dbSelector.value, 'id', clickedNode.data('id'));
+				fetchData('graph-data/nodeIsolation', 'db', dbSelector.value, 'table', clickedNode.data('id'));
 			}
 		}
 	});
 
 	document.getElementById('Expand').addEventListener('click', () => {
 		if (clickedNode.data('class') == 'table') {
-			fetchData('graph-data/node', 'db', dbSelector.value, 'id', clickedNode.data('id')).then(data => {
-				data.nodes.forEach(item => {
-					const option = document.createElement('option');
-					option.value = item.ID;
-					option.textContent = item.ID + " (" + item.OBJECTS + ")";
-					tableSelector.appendChild(option);
-				});
-			}).then(() => fetchData('graph-data', 'db', dbSelector.value)).then(data => buildGraph(data, 'objectGraph'));
+			fetchData('graph-data/node', 'db', dbSelector.value, 'table', clickedNode.data('id'))
+			// .then(data => expandNode(data, clickedNode));
+			.then(data => expandNode(data, clickedNode));
 		}
 	});
 });
@@ -344,7 +339,7 @@ function buildGraphData(data, graphType){
 			var foundby = ' (name)';
 			if (edge.byname == 'FALSE') foundby = ' (ONB)';
 			return {
-				group: 'edges', data: {id: edge.source + '_' + edge.target, source: edge.source, target: edge.target, inattr: edge.inattr, label: edge.inattr.substring(1) + foundby}
+				group: 'edges', data: {id: edge.source + '_' + edge.target, source: edge.source, source_type: edge.source_type, target: edge.target, target_type: edge.target_type, inattr: edge.inattr, label: edge.inattr.substring(1) + foundby}
 			}
 		});
 	}
@@ -352,18 +347,54 @@ function buildGraphData(data, graphType){
 }
 
 function expandNode(data, clickedNode){
-	console.log('expandNode("'+node+'")');
-	const nodeA = clickedNode;
+	console.log('expandNode("'+clickedNode.data('name')+'")');
 	
-	const [newNodes, newEdges] = buildGraphData(data, graphType);
+	const [newNodes, newEdges] = buildGraphData(data, 'objectGraph');
+	console.log(newEdges);
+	let edges = [];
 	newEdges.forEach(e => {
-		// si la source ou la cible ne sont pas dans le graphe, chercher si la table est dans le graphe
-		const source = cy.getElementById(e.source);
-		const target = cy.getElementById(e.target);
-		if (source.empty()){
-			// trouver le type du noeud qui à pour ID cette source dans la liste newNodes
+		if (cy.getElementById(e.source).nonempty() && cy.getElementById(e.target).nonempty()) edges.push(e);
+		else {
+			let elt = {
+				group: 'edges', 
+				data: {
+					id: e.source + '_' + e.target, 
+					source: e.source, 
+					source_type: e.source_type, 
+					target: e.target, 
+					target_type: e.target_type, 
+					inattr: e.inattr, 
+					label: e.inattr.substring(1) + foundby
+				}
+			}
+			let source = undefined;
+			let target = undefined;
+			let cancel = false;
+			if (cy.getElementById(e.source).empty() {
+				if (cy.getElementById(e.source_type).nonempty()) {
+					elt.data.source = e.source_type;
+					elt.data.id = elt.data.source + '_' + elt.data.target;
+				else cancel = true;
+			}
+			if (cy.getElementById(e.target).empty()) {
+				if (cy.getElementById(e.target_type).nonempty()) target = e.target_type;
+				else cancel = true;
+			}
 		}
+	});
 }
+// class: "object"
+// id: "142736163641"
+// label: "142736163641\n_L1_PT_DCR"
+// name: "SAN_RDPM_DMR_RES_TYP_MOV_IN"
+// type: "#%TEMP-TABLE:_L1_PT_DCR:"
+
+// class
+// id: "260010105770_317320389341"
+// inattr: ":_L1_AA_S_CLASS_FILTER"
+// label: "_L1_AA_S_CLASS_FILTER (name)"
+// source: "260010105770"
+// target: "317320389341"
 
 function buildGraph(data, graphType) {
 	console.log('buildgraph("'+graphType+'")');
