@@ -357,52 +357,69 @@ function buildGraphData(data, graphType){
 
 function expandNode(data, clickedNode){
 	console.log('expandNode("'+clickedNode.data('name')+'")');
-	clickedNode.hide();
-	// clickedNode = undefined;
 	const [newNodes, edges] = buildGraphData(data, 'objectGraph');
-	let newEdges = [];
-	newNodes.forEach(n => {
-		n.data.added = true;
+	// clickedNode.hide();
+	clickedNode.remove();
+	// create a group for the tableDef
+	const groupId = clickedNode.data('id');
+		cy.add({
+		data: {
+			id: groupId,
+			class: 'group',
+			'background-opacity': 0,
+			label: clickedNode.data('type')
+		},
+		position: clickedNode.position(), // au centre initialement
+		// selectable: false,
+		grabbable: true // <- pour qu’on puisse le déplacer à la souris
 	});
+	// move the new nodes
+	newNodes.forEach(n => {
+		n.data['parent'] = groupId;
+	});
+	let newEdges = [];
 	edges.forEach(e => {
 		if (cy.getElementById(e.source).nonempty() && cy.getElementById(e.target).nonempty()) newEdges.push(e);
 		else {
 			let source = undefined;
 			let target = undefined;
 			let cancel = false;
+			let elt = {
+				group: 'edges', 
+				data: {
+					id: e.data.source + '_' + e.data.target, 
+					source: e.data.source, 
+					source_type: e.data.source_type, 
+					target: e.data.target, 
+					target_type: e.data.target_type, 
+					inattr: e.data.inattr, 
+					label: e.data.inattr.substring(1) + foundby
+				}
+			}
 			if (cy.getElementById(e.source).empty()) {
-				if (cy.getElementById(e.source_type).nonempty()) {
-					elt.data.source = e.source_type;
+				if (cy.getElementById(e.data.source_type).nonempty()) {
+					elt.data.source = e.data.source_type;
 					elt.data.id = elt.data.source + '_' + elt.data.target;
 				}
 				else cancel = true;
 			}
-			if (cy.getElementById(e.target).empty()) {
-				if (cy.getElementById(e.target_type).nonempty()) target = e.target_type;
+			if (cy.getElementById(e.data.target).empty()) {
+				if (cy.getElementById(e.data.target_type).nonempty()) {
+					elt.data.target = e.data.target_type;
+					elt.data.id = elt.data.source + '_' + elt.data.target;
+				}
 				else cancel = true;
 			}
 			if (!cancel) {
 				var foundby = ' (name)';
 				if (e.data.byname == 'FALSE') foundby = ' (ONB)';
-				let elt = {
-					group: 'edges', 
-					data: {
-						id: e.data.source + '_' + e.data.target, 
-						source: e.data.source, 
-						source_type: e.data.source_type, 
-						target: e.data.target, 
-						target_type: e.data.target_type, 
-						inattr: e.data.inattr, 
-						label: e.data.inattr.substring(1) + foundby,
-						added: true
-					}
-				}
 				newEdges.push(elt);
 			}
 		}
 	});
 	return [newNodes, newEdges];
 }
+
 function addElementGraph(data){
 	console.log('adding elements in Graph');
 	const [nodes, edges] = data;
@@ -410,13 +427,51 @@ function addElementGraph(data){
 		cy.add(nodes);
 		cy.add(edges);
 	}
-	const addedElements = cy.elements('[added="true"]');  
-	cy.layout({
-		name: 'circle',
-		fit: true,
-		animate: true,
-		nodes: addedElements
-	}).run();
+	console.log(edges);
+	const addedElements = cy.nodes('[parent =  "' + clickedNode.data('id') + '"]');
+	layoutGroupAround(clickedNode, addedElements);
+}
+
+function layoutGroupAround(clickedNode, addedNodes) {
+  // 3. Placer les nœuds autour du parent (cercle)
+  const center = clickedNode.position();
+  const radius = 150;
+  const angleStep = (2 * Math.PI) / addedNodes.length;
+
+  addedNodes.forEach((node, i) => {
+    const angle = i * angleStep;
+    const x = center.x + radius * Math.cos(angle);
+    const y = center.y + radius * Math.sin(angle);
+    node.position({ x, y });
+  });
+
+  // 4. Style (optionnel) du groupe parent
+  cy.style()
+    .selector('node')
+    .style({
+      'background-color': '#999',
+      'label': 'data(id)'
+    })
+    .selector(':parent')
+    .style({
+      'background-opacity': 0.1,
+      'border-width': 1,
+      'border-color': '#aaa',
+      'shape': 'roundrectangle',
+      'padding': '30px',
+      'label': '', // invisible
+      'z-index': 0
+    })
+    .update();
+
+  // 5. Centrer la vue
+  cy.animate({
+    fit: {
+      eles: cy.collection([clickedNode, ...addedNodes]),
+      padding: 100
+    },
+    duration: 500
+  });
 }
 
 function buildGraph(data) {
