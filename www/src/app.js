@@ -364,10 +364,10 @@ function expandNode(data, clickedNode){
 	const groupId = clickedNode.data('id');
 		cy.add({
 		data: {
-			id: groupId,
-			class: 'group',
-			'background-opacity': 0,
-			label: clickedNode.data('type')
+			id: groupId
+			// class: 'group',
+			// 'background-opacity': 0,
+			// label: clickedNode.data('type')
 		},
 		position: clickedNode.position(), // au centre initialement
 		// selectable: false,
@@ -381,6 +381,7 @@ function expandNode(data, clickedNode){
 	edges.forEach(e => {
 		if (cy.getElementById(e.source).nonempty() && cy.getElementById(e.target).nonempty()) newEdges.push(e);
 		else {
+			console.log(e);
 			let source = undefined;
 			let target = undefined;
 			let cancel = false;
