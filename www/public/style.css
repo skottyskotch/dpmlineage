@@ -112,17 +112,6 @@ html, body {
 	border: 1px solid #ddd;
 }
 
-#dbSelector {
-	padding: 8px;
-	border-radius: 4px;
-	border: 1px solid #aaa;
-}
-#tableSelector {
-	padding: 8px;
-	border-radius: 4px;
-	border: 1px solid #aaa;
-}
-
 #highlightSelector {
 	width: 7%;
 }
@@ -177,4 +166,37 @@ html, body {
 	/* background-color: #007BFF; */
 	color: white;
 	border: none;
+}
+
+.selectorSection {
+	display: flex;
+	align-items: center;
+	flex-direction: row;
+	padding: 2px;
+	border-radius: 4px;
+	border: 1px solid #aaa;
+}
+.selectorButton{
+	margin: 1px;
+	margin-left: 2px;
+	align-self: stretch;
+}
+
+.selectorButton:disabled{
+	background-color: light-dark;
+	color: #888888;
+	cursor: not-allowed;
+	/* border: 1px; */
+	/* border-radius: 4px; */
+}
+
+.selectorButton.active{
+	background-color: #007BFF;
+	color: white;
+	border: none;
+	border-radius: 4px;
+}
+
+.selectorButton:hover:not(:disabled) {
+    background-color: #008BFF;
 }

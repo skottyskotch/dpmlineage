@@ -4,44 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plw Configuration Explorer</title>
+	<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 	<link rel="stylesheet" href="style.css">
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.31.2/cytoscape.min.js"></script>
-</head>
-<body>
-	<div id="actuators">
-		<select id="dbSelector">
-			<option value="" disabled selected hidden>-- Select a database --</option>
-		</select>
-		<select id="tableSelector">
-			<option value="" disabled selected hidden>-- Select a table --</option>
-		</select>
-		<div id="highlightSelector">
-			<input id="slider" type="range" min="0" max="2" value="1">
-			<div id="highlightMode">Incomers</div>
-		</div>
-		<button id="Isolate">Isolate</button>
-		<button id="Expand">Expand</button>
-		<button id="Full" style="padding: 10px 12px; border-radius: 4px; background-color: #007BFF; color: white; border: none;">Full</button>
-		<button id="admin" style="padding: 10px 12px; border-radius: 4px; background-color: #007BFF; color: white; border: none;" onclick="window.location.href='/autre-page'">Admin</button>
-	</div>
-	<div id="cy"><h2>Planisware configuration graph</h2></div>
-		<!-- <div id="node-info"><h2>Click a node for more information.</h2></div> -->
-		<div class="right-panel-container">
-		<div id="rightPanel" class="right-panel collapsed">
-			<button id="toggleBtn" class="toggle-button" onclick="togglePane()">⮜</button>
-			<div id="resizer" class="resizer"></div>
-			<div class="vertical-label" id="sideText" style="margin-left: 30px;">
-				<p>Click a node for more information</p>
-			</div>
-			<div id = "permaText" style="margin-left: 30px;">
-				<p>Click a node for more information</p>
-			</div>
-		</div>
-	</div>
-
 	<script src="https://unpkg.com/layout-base/layout-base.js"></script>
 	<script src="https://unpkg.com/cose-base/cose-base.js"></script>
 	<script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
-	<script src="/src/app.js" defer></script>	
+</head>
+<body>
+	<div id="actuators">
+		<div class="selectorSection">
+			<select id="dbSelector" style="width: 200px;">
+				<option value="" disabled selected hidden>-- Select a database --</option>
+			</select>
+			<button class="selectorButton" id="runDB" disabled>run</button>
+		</div>
+		<div class="selectorSection">
+			<select id="tableSelector" style="width: 300px;">
+				<option value="" disabled selected hidden>-- Select a table --</option>
+			</select>
+			<button class="selectorButton" id="centerTable" disabled>center</button>
+			<button class="selectorButton" id="runTable" disabled>run</button>
+		</div>
+		<div class="selectorSection">
+			<select id="objectSelector" style="width: 300px;">
+				<option value="" disabled selected hidden>-- Select an object --</option>
+			</select>
+			<button class="selectorButton" id="centerObject" disabled>center</button>
+			<button class="selectorButton" id="runObject" disabled>run</button>
+		</div>
+		<!-- <div id="highlightSelector"> -->
+			<!-- <input id="slider" type="range" min="0" max="2" value="1"> -->
+			<!-- <div id="highlightMode">Incomers</div> -->
+		<!-- </div> -->
+		<!-- <button id="Isolate">Isolate</button> -->
+		<!-- <button id="Expand">Expand</button> -->
+		<!-- <button id="Full" style="padding: 10px 12px; border-radius: 4px; background-color: #007BFF; color: white; border: none;">Full</button> -->
+		<!-- <button id="admin" style="padding: 10px 12px; border-radius: 4px; background-color: #007BFF; color: white; border: none;" onclick="window.location.href='/autre-page'">Admin</button> -->
+	</div>
+	<h2>Planisware configuration graph</h2></div>
+	<div id="cy"></div>
+		<!-- <div id="node-info"><h2>Click a node for more information.</h2></div> -->
+	<!-- <div class="right-panel-container"> -->
+		<!-- <div id="rightPanel" class="right-panel collapsed"> -->
+			<!-- <button id="toggleBtn" class="toggle-button" onclick="togglePane()">⮜</button> -->
+			<!-- <div id="resizer" class="resizer"></div> -->
+			<!-- <div class="vertical-label" id="sideText" style="margin-left: 30px;"> -->
+				<!-- <p>Click a node for more information</p> -->
+			<!-- </div> -->
+			<!-- <div id = "permaText" style="margin-left: 30px;"> -->
+				<!-- <p>Click a node for more information</p> -->
+			<!-- </div> -->
+		<!-- </div> -->
+	<!-- </div> -->
+	<script src="/src/cytoscape.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+	<script src="/src/app.js"></script>
 </body>
 </html>

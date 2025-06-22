@@ -1,5 +1,4 @@
 const express = require('express');
-const session = require('express-session');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
@@ -7,13 +6,6 @@ const app = express();
 const port = 3000;
 
 app.use(express.urlencoded({ extended: true }));
-app.use(session({
-  secret: 'whatsthesecret?',
-  resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false }
-}));
-
 // Serve static files from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/src', express.static(path.join(__dirname, 'src')));
@@ -25,7 +17,9 @@ var depth = 1;
 var sNodesFull = "select ID, NAME, TYPE from nodes;";
 var sEdgeFull = "with cte as (select ID from nodes) select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where SOURCE in (select ID from cte) or TARGET in (select ID from cte);";
 var sNodesFromOneTable = "select ID, NAME, TYPE from nodes where type in ('{0}');";
-var sEdgesFromOneTable = "with cte as (select ID from nodes where type in ('{0}'))select a.SOURCE, b.TYPE as SOURCE_TYPE, a.TARGET, c.TYPE as TARGET_TYPE, INATTRIBUTE, BYNAME from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where SOURCE in (select ID from cte) or TARGET in (select ID from cte);";
+var sEdgesFromOneTable = "with cte as (select ID from nodes where type in ('{0}'))select a.SOURCE, b.TYPE as SOURCE_TYPE, a.TARGET, c.TYPE as TARGET_TYPE, INATTRIBUTE, BYNAME from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where SOURCE in (select ID from cte) and TARGET in (select ID from cte);";
+var sNodesFromOneNode = "with cte as (select a.SOURCE, a.TARGET from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where a.SOURCE = '{0}' or a.TARGET = '{0}') select ID, NAME, TYPE from nodes where ID = '{0}' or ID in (select SOURCE from cte) or ID in (select TARGET from cte);";
+var sEdgesFromOneNode = "select a.SOURCE, b.TYPE as SOURCE_TYPE, a.TARGET, c.TYPE as TARGET_TYPE, INATTRIBUTE, BYNAME from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where a.SOURCE = '{0}' or a.TARGET = '{0}'";
 
 // TABLEDEF api:
 // -- tablename | number of objects
@@ -47,18 +41,10 @@ fs.readdirSync(dbFolder).forEach(dbFile => {
 });
 
 function format(str, ...values) {
-  return str.replace(/{(\d+)}/g, function(match, index) {
-    return typeof values[index] !== 'undefined' ? values[index] : match;
-  });
+	return str.replace(/{(\d+)}/g, function(match, index) {
+		return typeof values[index] !== 'undefined' ? values[index] : match;
+	});
 }
-
-app.get('/admin', (req, res) => {
-	const selection = req.session.selection || 'Aucune sélection';
-	res.send(`
-		<p>Vous avez choisi : ${selection}</p>
-		<a href="/">Retour à l'accueil</a>
-	`);
-});
 
 // API endpoint for list available dbs
 app.get('/api/database', (req, res) => {
@@ -66,41 +52,34 @@ app.get('/api/database', (req, res) => {
     res.json({databases});
 });
 
-// API endpoint to fetch graph data
-app.get('/api/graph-data', (req, res) => {
-    if (req.query.db) {
-		req.session.selection = req.query.db;
-        if (hDatabases[req.query.db] != undefined) {
-            var db = hDatabases[req.query.db];
-            db.serialize(() => {
-				// const sQuery1 = format(sQueryNodes,tableDefFilter,depth);
-				const sQuery1 = sQueryNodes;
-                db.all(sQuery1, (err, _nodes) => {
-                    if (err) {
-                        res.status(400).json({"error": err.message});
-                        return;
-                    }
-					// const sQuery2 = format(sQueryEdges,tableDefFilter,depth);
-					const sQuery2 = sQueryEdges;
-                    db.all(sQuery2, (err, _edges) => {
-                        if (err) {
-                            res.status(400).json({"error": err.message});
-                            return;
-                        }
-                        const nodes = _nodes.map(node => ({id: node.ID, name: node.NAME, type: node.TYPE}))
-                        const edges = _edges.map(edge => ({id: edge.Id, source: edge.SOURCE, target: edge.TARGET, inattr: edge.INATTRIBUTE, byname: edge.byname}))
-						const selectedDb = req.session.selection;
-                        res.json({selectedDb,nodes,edges});
-                    });
-                });
-            });
-        }
-        else{
-            res.json({"error":"database " +req.query.db + " not found"});
-        }
-    }
+// API endpoint for tables graph
+app.get('/api/graph-data/tabledef', (req,res) => {
+	if (req.query.db) {
+		let sQueryNodes = sQueryTabledefNodes;
+		let sQueryEdges = sQueryTabledefEdges;
+		if (hDatabases[req.query.db] != undefined) {
+			let db = hDatabases[req.query.db];
+			db.serialize(() => {
+				db.all(sQueryNodes, (err, nodes) => {
+					if (err) {
+						res.status(400).json({"error nodes": err.message});
+						return;
+					}
+					db.all(sQueryEdges, (err, edges) => {
+						if (err) {
+							res.status(400).json({"error edges": err.message});
+							return;
+						}
+						const _nodes = nodes.map(node => ({id: node.ID, objects: nodes.OBJECTS}))
+						const _edges = edges.map(edge => ({id: edge.Id, source: edge.SOURCE, target: edge.TARGET}))
+						res.json({class:'tableDef', nodes, edges});
+					});
+				});
+			});
+		}
+	}
     else {
-        res.json({"error":"Please request a database /api/graph-data?db=databasename.db"});
+        res.json({"error":"Please request a database /api/graph-data/tabledef?db=databasename"});
     }
 });
 
@@ -112,7 +91,10 @@ app.get('/api/graph-data/node', (req,res) => {
 			sQueryNodes = format(sNodesFromOneTable, req.query.table);
 			sQueryEdges = format(sEdgesFromOneTable, req.query.table);
 		}
-		req.session.selection = req.query.db;
+		else if (req.query.id) {
+			sQueryNodes = format(sNodesFromOneNode, req.query.id);
+			sQueryEdges = format(sEdgesFromOneNode, req.query.id);
+		}
 		if (hDatabases[req.query.db] != undefined) {
 			let db = hDatabases[req.query.db];
 			db.serialize(() => {
@@ -129,7 +111,7 @@ app.get('/api/graph-data/node', (req,res) => {
 						}
 						const nodes = _nodes.map(node => ({id: node.ID, name: node.NAME, type: node.TYPE}))
 						const edges = _edges.map(edge => ({id: edge.Id, source: edge.SOURCE, source_type: edge.SOURCE_TYPE, target: edge.TARGET, target_type: edge.TARGET_TYPE, inattr: edge.INATTRIBUTE, byname: edge.BYNAME}))
-						res.json({nodes, edges});
+						res.json({class:'object',nodes, edges});
 					});
 				});
 			});
@@ -145,7 +127,6 @@ app.get('/api/graph-data/node', (req,res) => {
 
 app.get('/api/graph-data/class', (req,res) => {
 	if (req.query.db) {
-		req.session.selection = req.query.db;
 		if (hDatabases[req.query.db] != undefined) {
 			let db = hDatabases[req.query.db];
 			let sQuery = "select ID, OBJECTS from TABLEDEF where ID = " + req.query.id + ";";
@@ -155,7 +136,6 @@ app.get('/api/graph-data/class', (req,res) => {
 					res.status(400).json({"error": err.message});
 					return;
 				}
-				const selectedDb = req.session.selection;
 				res.json({selectedDb, node});
 			});
 		}
@@ -166,46 +146,6 @@ app.get('/api/graph-data/class', (req,res) => {
     else {
         res.json({"error":"Please request a database /api/graph-data?db=databasename.db&ID=nodeid"});
     }
-});
-
-app.get('/api/graph-data/tabledef', (req,res) => {
-	if (req.query.db) {
-		let sQueryNodes = sQueryTabledefNodes;
-		let sQueryEdges = sQueryTabledefEdges;
-		if (req.query.id) {
-			sQueryNodes = format(sQueryTableDefObjectNodes, req.query.id);
-			sQueryEdges = format(sQueryTableDefObjectEdges, req.query.id);
-		}
-		req.session.selection = req.query.db;
-		if (hDatabases[req.query.db] != undefined) {
-			let db = hDatabases[req.query.db];
-			db.serialize(() => {
-				db.all(sQueryNodes, (err, nodes) => {
-					if (err) {
-						res.status(400).json({"error nodes": err.message});
-						return;
-					}
-					db.all(sQueryEdges, (err, edges) => {
-						if (err) {
-							res.status(400).json({"error edges": err.message});
-							return;
-						}
-						const _nodes = nodes.map(node => ({id: node.ID, objects: nodes.OBJECTS}))
-						const _edges = edges.map(edge => ({id: edge.Id, source: edge.SOURCE, target: edge.TARGET}))
-						res.json({nodes, edges});
-					});
-				});
-			});
-		}
-	}
-    else {
-        res.json({"error":"Please request a database /api/graph-data/tabledef?db=databasename"});
-    }
-});
-
-app.get('/api/databaseSelected', (req, res) => {
-	const selectedDb = req.session.selection;
-	res.json({selectedDb});
 });
 
 app.listen(port, () => {
