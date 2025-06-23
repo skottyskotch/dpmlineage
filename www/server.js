@@ -11,26 +11,26 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/src', express.static(path.join(__dirname, 'src')));
 
 // useful db queries for apis
-var depth = 1;
+// var depth = 1;
 
 // Objects api
-var sNodesFull = "select ID, NAME, TYPE from nodes;";
-var sEdgeFull = "with cte as (select ID from nodes) select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where SOURCE in (select ID from cte) or TARGET in (select ID from cte);";
-var sNodesFromOneTable = "select ID, NAME, TYPE from nodes where type in ('{0}');";
-var sEdgesFromOneTable = "with cte as (select ID from nodes where type in ('{0}'))select a.SOURCE, b.TYPE as SOURCE_TYPE, a.TARGET, c.TYPE as TARGET_TYPE, INATTRIBUTE, BYNAME from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where SOURCE in (select ID from cte) and TARGET in (select ID from cte);";
-var sNodesFromOneNode = "with cte as (select a.SOURCE, a.TARGET from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where a.SOURCE = '{0}' or a.TARGET = '{0}') select ID, NAME, TYPE from nodes where ID = '{0}' or ID in (select SOURCE from cte) or ID in (select TARGET from cte);";
-var sEdgesFromOneNode = "select a.SOURCE, b.TYPE as SOURCE_TYPE, a.TARGET, c.TYPE as TARGET_TYPE, INATTRIBUTE, BYNAME from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where a.SOURCE = '{0}' or a.TARGET = '{0}'";
+const sNodesFull = "select ID, NAME, TYPE from nodes;";
+const sEdgeFull = "with cte as (select ID from nodes) select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where SOURCE in (select ID from cte) or TARGET in (select ID from cte);";
+const sNodesFromOneTable = "select ID, NAME, TYPE from nodes where type in ('{0}');";
+const sEdgesFromOneTable = "with cte as (select ID from nodes where type in ('{0}'))select a.SOURCE, b.TYPE as SOURCE_TYPE, a.TARGET, c.TYPE as TARGET_TYPE, INATTRIBUTE, BYNAME from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where SOURCE in (select ID from cte) and TARGET in (select ID from cte);";
+const sNodesFromOneNode = "with cte as (select a.SOURCE, a.TARGET from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where a.SOURCE = '{0}' or a.TARGET = '{0}') select ID, NAME, TYPE from nodes where ID = '{0}' or ID in (select SOURCE from cte) or ID in (select TARGET from cte);";
+const sEdgesFromOneNode = "select a.SOURCE, b.TYPE as SOURCE_TYPE, a.TARGET, c.TYPE as TARGET_TYPE, INATTRIBUTE, BYNAME from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where a.SOURCE = '{0}' or a.TARGET = '{0}'";
 
 // TABLEDEF api:
 // -- tablename | number of objects
 // -- source table | target table | number of links
-var sQueryEdges = "with cte as (select ID, TYPE from nodes where type = '#%TEMP-TABLE:_SC_PT_REPORTING:') select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where SOURCE in (select ID from cte) or TARGET in (select ID from cte);";
 // no filter ("all tabledef")
 const sQueryTabledefNodes = "select ID, OBJECTS from TABLEDEF;";
 const sQueryTabledefEdges = "with cte as (select distinct d.id as source, e.id as target , count(*) as number_of_edges from edges a join nodes b on a.source =b.id join nodes c on a.target = c.id join tabledef d on b.type = d.id join tabledef e on c.type = e.id group by d.id, e.id), sumcte as (select cte.source, sum(number_of_edges) as number_of_connections from cte group by source) select cte.source as SOURCE, cte.target as TARGET, cte.number_of_edges as number_of_edges, sumcte.number_of_connections from cte left join sumcte on cte.source = sumcte.source order by number_of_connections desc;";
 // filter on one tabledef and connected ("isolate tabledef")
-var sQueryTableDefObjectNodes = "with tablelinks as (SELECT n1.type AS SOURCE, n2.type AS TARGET FROM edges l JOIN nodes n1 ON l.source = n1.id JOIN nodes n2 ON l.target = n2.id WHERE (n1.type = '{0}' OR n2.type = '{0}') GROUP BY n1.type, n2.type),tables as (select SOURCE as type from tablelinks union select TARGET as type from tablelinks) select a.type as ID, b.OBJECTS from tables a left join tabledef b on a.type = b.id;"
-var sQueryTableDefObjectEdges = "SELECT n1.type AS SOURCE, n2.type AS TARGET, COUNT(*) AS number_of_edges FROM edges l JOIN nodes n1 ON l.source = n1.id JOIN nodes n2 ON l.target = n2.id WHERE (n1.type = '{0}' OR n2.type = '{0}') GROUP BY n1.type, n2.type ORDER BY number_of_edges DESC;"
+const sQueryTableDefObjectNodes = "with tablelinks as (SELECT n1.type AS SOURCE, n2.type AS TARGET FROM edges l JOIN nodes n1 ON l.source = n1.id JOIN nodes n2 ON l.target = n2.id WHERE (n1.type = '{0}' OR n2.type = '{0}') GROUP BY n1.type, n2.type),tables as (select SOURCE as type from tablelinks union select TARGET as type from tablelinks) select a.type as ID, b.OBJECTS from tables a left join tabledef b on a.type = b.id;"
+const sQueryTableDefObjectEdges = "SELECT n1.type AS SOURCE, n2.type AS TARGET, COUNT(*) AS number_of_edges FROM edges l JOIN nodes n1 ON l.source = n1.id JOIN nodes n2 ON l.target = n2.id WHERE (n1.type = '{0}' OR n2.type = '{0}') GROUP BY n1.type, n2.type ORDER BY number_of_edges DESC;"
+// info on click
 
 const dbFolder = '../output/';
 let hDatabases = {};
@@ -57,6 +57,10 @@ app.get('/api/graph-data/tabledef', (req,res) => {
 	if (req.query.db) {
 		let sQueryNodes = sQueryTabledefNodes;
 		let sQueryEdges = sQueryTabledefEdges;
+		if (req.query.id){
+			sQueryNodes = sQueryTabledefNodes;
+			sQueryEdges = sQueryTabledefEdges;
+		}
 		if (hDatabases[req.query.db] != undefined) {
 			let db = hDatabases[req.query.db];
 			db.serialize(() => {

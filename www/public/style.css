@@ -55,74 +55,6 @@ html, body {
     margin-top: 5px;
 }
 
-.vertical-label {
-  position: relative;
-  left: 0px;
-  top: 90%;
-  transform: rotate(-90deg) translateY(-110%);
-  transform-origin: left center;
-  /* background: #ccc; */
-  /* padding: 5px 10px; */
-  /* font-weight: bold; */
-  /* cursor: pointer; */
-  /* white-space: nowrap; */
-}
-
-#actuators {
-	padding: 5px;
-	margin: 5px;
-	display: flex;
-	gap: 5px;
-	border: 1px solid #ddd;
-}
-
-#highlightSelector {
-	width: 7%;
-}
-
-#slider {
-	-webkit-appearance: none;
-	display: inline-block;
-	width: 100%;
-	background: #d3d3d3;
-	outline: none;
-	opacity: 0.7;
-	border-radius: 16px;
-	-webkit-transition: .2s;
-	transition: opacity .2s;
-}
-#slider:hover {
-  opacity: 1;
-}
-
-#highlightMode {
-	padding: 1px 1px;
-	background-color: #ddd;
-	border-radius: 8px;
-	text-align: center;
-	user-select: none;
-	/* font-weight: bold; */
-	transition: background-color 0.3s;
-}
-#highlightMode.state-0 {
-	background-color: #ffcc00; /* Incomers */
-}
-#highlightMode.state-1 {
-	background-color: #ccc; /* Both */
-}
-#highlightMode.state-2 {
-	background-color: #66ccff;     /* Outgoers */
-}
-
-#Isolate{
-	padding: 10px 12px;
-	border-radius: 4px;
-	background-color: #ccc;
-	/* background-color: #007BFF; */
-	color: white; 
-	border: none;
-}
-
 #Expand{
 	padding: 10px 12px;
 	border-radius: 4px;
@@ -133,6 +65,13 @@ html, body {
 }
 
 /* toolbar */
+#toolbar {
+	padding: 5px;
+	margin: 5px;
+	display: flex;
+	gap: 5px;
+	border: 1px solid #ddd;
+}
 .selectorSection {
 	display: flex;
 	align-items: center;
@@ -163,6 +102,42 @@ html, body {
     background-color: #008BFF;
 }
 
+#highlightSelector {
+	width: 4%;
+}
+#slider {
+	-webkit-appearance: none;
+	display: inline-block;
+	width: 100%;
+	background: #d3d3d3;
+	outline: none;
+	opacity: 0.7;
+	border-radius: 16px;
+	-webkit-transition: .2s;
+	transition: opacity .2s;
+}
+#slider:hover {
+  opacity: 1;
+}
+#highlightModeMessage {
+	padding: 1px 1px;
+	background-color: #ddd;
+	border-radius: 8px;
+	text-align: center;
+	user-select: none;
+	/* font-weight: bold; */
+	transition: background-color 0.3s;
+}
+#highlightModeMessage.state-0 {
+	background-color: #ffcc00; /* Incomers */
+}
+#highlightModeMessage.state-1 {
+	background-color: #ccc; /* Both */
+}
+#highlightModeMessage.state-2 {
+	background-color: #66ccff;     /* Outgoers */
+}
+
 /* right panel */
 .rightPanel-container {
   position: relative;
@@ -171,7 +146,7 @@ html, body {
   height: 100%;
 }
 .rightPanel {
-	width: 300px;
+	width: 400px;
 	height: 100vh;
 	background: #ffffff;
 	border-left: 1px solid #ddd;
@@ -189,7 +164,6 @@ html, body {
 .rightPanel.expanded {
 	transform: translateX(0);
 }
-
 .resizer {
 	position: absolute;
 	left: 0;
@@ -198,4 +172,38 @@ html, body {
 	height: 100%;
 	cursor: ew-resize;
 	background-color: transparent; /* optionnel : #ccc pour visibilité */
+}
+.verticalLabel {
+  position: relative;
+  left: 0px;
+  margin-left: 30px;
+  top: 90%;
+  transform: rotate(-90deg) translateY(-110%);
+  transform-origin: left center;
+  /* background: #ccc; */
+  /* padding: 5px 10px; */
+  /* font-weight: bold; */
+  /* cursor: pointer; */
+  /* white-space: nowrap; */
+}
+.infoPanelButton{
+	margin: 1px;
+	margin-left: 2px;
+	align-self: stretch;
+}
+.infoPanelButton:disabled{
+	background-color: light-dark;
+	color: #888888;
+	cursor: not-allowed;
+	/* border: 1px; */
+	/* border-radius: 4px; */
+}
+.infoPanelButton.active{
+	background-color: #007BFF;
+	color: white;
+	border: none;
+	border-radius: 4px;
+}
+.infoPanelButton:hover:not(:disabled) {
+    background-color: #008BFF;
 }

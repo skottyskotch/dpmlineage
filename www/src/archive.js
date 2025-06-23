@@ -1,47 +1,3 @@
-// ******* UI functions
-
-function linkHighlighterSelectorUpdate(value) {
-	highlightMode.classList.remove('state-0', 'state-1', 'state-2');
-	highlightMode.classList.add(`state-${value}`);
-	const labels = ['Incomers', 'Both', 'Outgoers'];
-	highlightMode.textContent = labels[value];
-	colorNodesOnClick();
-}
-
-
-// right panel
-const panel = document.getElementById('rightPanel');
-
-function togglePane() {
-	const button = document.getElementById('toggleBtn');
-	panel.classList.toggle('collapsed');
-	if (panel.classList.contains('collapsed')) {
-		button.innerHTML = '⮜';
-	} else {
-		button.innerHTML = '⮞';
-	}
-}
-
-const resizer = document.getElementById('resizer');
-
-resizer.addEventListener('mousedown', (e) => {
-	e.preventDefault();
-	document.addEventListener('mousemove', resizePanel);
-	document.addEventListener('mouseup', stopResize);
-});
-
-function resizePanel(e) {
-	const newWidth = window.innerWidth - e.clientX;
-	if (newWidth > 150 && newWidth < 600) {
-		panel.style.width = newWidth + 'px';
-	}
-}
-
-function stopResize() {
-	document.removeEventListener('mousemove', resizePanel);
-	document.removeEventListener('mouseup', stopResize);
-}
-
 function displayInfoObject(data){
 	var attributes = data.node[0].ATTRIBUTES.split('|');
 	var values = data.node[0].DATA.split('|');
@@ -118,7 +74,9 @@ function displayInfoTable(data){
 	infoDiv1.className = 'infoSection';
 	sectionTitle1.appendChild(infoDiv1);
 	
+	console.log(data);
     data.edges.forEach(edge =>{
+		console.log(edge);
 		if (edge.SOURCE != clickedNode.data('id') || [edge.SOURCE, edge.TARGET].filter( x => x === clickedNode.data('id')).length == 2) {
 			const value = document.createElement('div');
 			value.textContent = edge.number_of_edges;

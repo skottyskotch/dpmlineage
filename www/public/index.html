@@ -12,7 +12,7 @@
 	<script src="https://unpkg.com/cytoscape-fcose/cytoscape-fcose.js"></script>
 </head>
 <body>
-	<div id="actuators">
+	<div id="toolbar">
 		<div class="selectorSection">
 			<select id="dbSelector" style="width: 200px;">
 				<option value="" disabled selected hidden>-- Select a database --</option>
@@ -33,10 +33,10 @@
 			<button class="selectorButton" id="centerObject" disabled>center</button>
 			<button class="selectorButton" id="runObject" disabled>run</button>
 		</div>
-		<!-- <div id="highlightSelector"> -->
-			<!-- <input id="slider" type="range" min="0" max="2" value="1"> -->
-			<!-- <div id="highlightMode">Incomers</div> -->
-		<!-- </div> -->
+		<div id="highlightSelector">
+			<input id="slider" type="range" min="0" max="2" value="1">
+			<div class="state-1" id="highlightModeMessage">In/Out</div>
+		</div>
 		<!-- <button id="Isolate">Isolate</button> -->
 		<!-- <button id="Expand">Expand</button> -->
 		<!-- <button id="Full" style="padding: 10px 12px; border-radius: 4px; background-color: #007BFF; color: white; border: none;">Full</button> -->
@@ -44,14 +44,15 @@
 	</div>
 	<h2>Planisware configuration graph</h2></div>
 	<div id="cy"></div>
-	<!-- <div id="node-info"><h2>Click a node for more information.</h2></div> -->
 	<div class="rightPanel-container">
 		<div id="rightPanel" class="rightPanel collapsed">
 			<button id="toggleBtn" class="toggle-button">⮜</button>
+			<button class="infoPanelButton" id="Isolate" disabled>Isolate</button>
+			<button class="infoPanelButton" id="Discover" disabled>Discover</button>
 			<div id="resizer" class="resizer"></div>
-			<!-- <div class="vertical-label" id="sideText" style="margin-left: 30px;"> -->
-				<!-- <p>Click a node for more information</p> -->
-			<!-- </div> -->
+			<div class="verticalLabel">
+				<p>Click a node for more information</p>
+			</div>
 			<!-- <div id = "permaText" style="margin-left: 30px;"> -->
 				<!-- <p>Click a node for more information</p> -->
 			<!-- </div> -->

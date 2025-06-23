@@ -44,8 +44,45 @@ function activeCenterButton(eltId){
 	}
 }
 
-// Right panel functions
+function linkHighlighterSelectorUpdate() {
+	const value = $(this).val();
+	highlightModeMessage.classList.remove('state-0', 'state-1', 'state-2');
+	highlightModeMessage.classList.add(`state-${value}`);
+	const labels = ['Incomers', 'In/Out', 'Outgoers'];
+	highlightModeMessage.textContent = labels[value];
+	colorNodesOnClick();
+}
 
+// Right panel functions
+function resizePanel(e) {
+	const newWidth = window.innerWidth - e.clientX;
+	if (newWidth > 150 && newWidth < 600) {
+		rightPanel.style.width = newWidth + 'px';
+	}
+}
+
+function stopResize() {
+	document.removeEventListener('mousemove', resizePanel);
+	document.removeEventListener('mouseup', stopResize);
+}
+
+function isolateNode() {
+	if (clickedNode){
+		let connectedElts = clickedNode.neighborhood();
+		let visibleElts = connectedElts.add(clickedNode);
+		cy.elements().not(visibleElts).hide();
+		visibleElts.show();
+	}
+}
+
+function discoverNode() {
+	if (clickedNode){
+		let connectedElts = clickedNode.neighborhood();
+		let visibleElts = connectedElts.add(clickedNode);
+		// cy.elements().not(visibleElts).hide();
+		visibleElts.show();
+	}
+}
 
 $(document).ready(function() {
 	// init selectors
@@ -165,6 +202,8 @@ $(document).ready(function() {
 		}
 	});
 	
+	$('#slider').on('input', linkHighlighterSelectorUpdate);
+
 	// init right panel
 	$('#toggleBtn').click(function() {
 		rightPanel.classList.toggle('collapsed');
@@ -172,6 +211,16 @@ $(document).ready(function() {
 		else toggleBtn.innerHTML = '⮞';
 	});
 	
+	$('#resizer').on('mousedown', function(e) {
+		e.preventDefault();
+		document.addEventListener('mousemove', resizePanel);
+		document.addEventListener('mouseup', stopResize);
+	});
+
+	$('#Isolate').click(isolateNode);
+	
+	$('#Discover').click(discoverNode);
+
 	// init the available databases
 	fetchData('database')
 	.then(data => {
