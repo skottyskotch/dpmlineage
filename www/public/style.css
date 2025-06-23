@@ -55,42 +55,6 @@ html, body {
     margin-top: 5px;
 }
 
-.right-panel-container {
-  position: relative;
-  display: flex;
-  flex-direction: row;
-  height: 100%;
-}
-
-.right-panel {
-	width: 300px;
-	height: 100vh;
-	background: #ffffff;
-	border-left: 1px solid #ddd;
-	transition: transform 0.3s ease;
-	box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
-	position: fixed;
-	top: 0;
-	right: 0;
-	z-index: 100;
-	overflow: hidden;
-}
-.right-panel.collapsed {
-	transform: translateX(90%);
-}
-.right-panel.expanded {
-	transform: translateX(0);
-}
-.resizer {
-	position: absolute;
-	left: 0;
-	top: 0;
-	width: 5px;
-	height: 100%;
-	cursor: ew-resize;
-	background-color: transparent; /* optionnel : #ccc pour visibilité */
-}
-
 .vertical-label {
   position: relative;
   left: 0px;
@@ -168,6 +132,7 @@ html, body {
 	border: none;
 }
 
+/* toolbar */
 .selectorSection {
 	display: flex;
 	align-items: center;
@@ -181,7 +146,6 @@ html, body {
 	margin-left: 2px;
 	align-self: stretch;
 }
-
 .selectorButton:disabled{
 	background-color: light-dark;
 	color: #888888;
@@ -189,14 +153,49 @@ html, body {
 	/* border: 1px; */
 	/* border-radius: 4px; */
 }
-
 .selectorButton.active{
 	background-color: #007BFF;
 	color: white;
 	border: none;
 	border-radius: 4px;
 }
-
 .selectorButton:hover:not(:disabled) {
     background-color: #008BFF;
+}
+
+/* right panel */
+.rightPanel-container {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+}
+.rightPanel {
+	width: 300px;
+	height: 100vh;
+	background: #ffffff;
+	border-left: 1px solid #ddd;
+	transition: transform 0.3s ease;
+	box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+	position: fixed;
+	top: 0;
+	right: 0;
+	z-index: 100;
+	overflow: hidden;
+}
+.rightPanel.collapsed {
+	transform: translateX(90%);
+}
+.rightPanel.expanded {
+	transform: translateX(0);
+}
+
+.resizer {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 5px;
+	height: 100%;
+	cursor: ew-resize;
+	background-color: transparent; /* optionnel : #ccc pour visibilité */
 }

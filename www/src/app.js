@@ -22,7 +22,7 @@ async function fetchData(endpoint, ...args){
     return data;
 }
 
-// Toolbar selectors - init
+// Toolbar functions
 function initSelectorButtons(eltId = null) {
 	if (eltId == null) $('.selectorButton').removeClass('active').prop('disabled', true);
 	else $(eltId).removeClass('active').prop('disabled', true);
@@ -43,6 +43,9 @@ function activeCenterButton(eltId){
 		else $('#centerTable').removeClass('active').prop('disabled', true);
 	}
 }
+
+// Right panel functions
+
 
 $(document).ready(function() {
 	// init selectors
@@ -99,7 +102,7 @@ $(document).ready(function() {
 				data.nodes.forEach(item => {
 					const object = document.createElement('option');
 					object.value = item.id;
-					object.textContent = item.id.replace(/^[^:]*:/,'').replace(/:$/,'');
+					object.textContent = item.id.replace(/^[^:]*:/,'').replace(/:$/,'') + " - " + item.name;
 					document.getElementById('objectSelector').appendChild(object);
 				});
 				$('#objectSelector').val(null);
@@ -121,16 +124,6 @@ $(document).ready(function() {
 		}
 	});
 
-    fetchData('database')
-	.then(data => {
-        data.databases.forEach(item => {
-            const option = document.createElement('option');
-            option.value = item;
-            option.textContent = item;
-            dbSelector.appendChild(option);
-        })
-    });
-	
 	$('#runDB').click(function() {
 		if (cy) cy.elements().remove();
 		if (databaseSelected != "") {
@@ -171,4 +164,22 @@ $(document).ready(function() {
 			centerOnNode(objectSelected);
 		}
 	});
+	
+	// init right panel
+	$('#toggleBtn').click(function() {
+		rightPanel.classList.toggle('collapsed');
+		if (rightPanel.classList.contains('collapsed')) toggleBtn.innerHTML = '⮜';
+		else toggleBtn.innerHTML = '⮞';
+	});
+	
+	// init the available databases
+	fetchData('database')
+	.then(data => {
+        data.databases.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item;
+            option.textContent = item;
+            dbSelector.appendChild(option);
+        })
+    });
 });

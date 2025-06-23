@@ -12,10 +12,12 @@ function graphData(data) {
 			}
 		}
 		else {
+			let sLabel = node.id+"\n"+node.type.replace(/^[^:]*:/,'').replace(':','');
+			if (node.name != "") sLabel = node.name+"\n"+node.type.replace(/^[^:]*:/,'').replace(':','');
 			nodeStruct = {
 				id: node.id,
 				name: node.name,
-				label: node.id+"\n"+node.type.replace(/^[^:]*:/,'').replace(':',''),
+				label: sLabel,
 				type: node.type,
 				class: sClass
 			}
