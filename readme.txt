@@ -1,4 +1,5 @@
  - install on a linux VM with node.js and python3
+(being sudoer)
 unzip everything somewhere or git init
 chmod +x install.sh
 chmod +x start.sh
