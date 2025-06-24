@@ -119,7 +119,7 @@ function onClickNode(evt) {
 	$('#Isolate').addClass('active').prop('disabled', false);
 	
 	// activate the Discover button if there are any to discover
-	fetchData('graph-data/node', 'db', dbSelector.value, 'id', clickedNode.id())
+	fetchData('graph-data/nodes', 'db', dbSelector.value, 'id', clickedNode.id())
 	.then(data => {
 		if (data.nodes.some(node => cy.getElementById(node.id).empty())) { // if some in database aren't in the graph
 			$('#Discover').addClass('active').prop('disabled', false);
@@ -142,7 +142,6 @@ function onClickNode(evt) {
 
 function colorNodesOnClick() {
 	if (cy && clickedNode) {
-		console.log('color');
 		// clean styles
 		cy.nodes().forEach(n => {
 			n.style({
@@ -262,9 +261,10 @@ function displayInfoTable(){
 }
 
 function displayInfoObject(data){
-	var attributes = data.nodes[0].attributes.split('|');
-	var values = data.nodes[0].data.split('|');
-	var title = data.nodes[0].type;
+	// var attributes = data.nodes[0].attributes.split('|');
+	var attributes = data.nodes[0].attributes.split(String.fromCharCode(23));
+	// var values = data.nodes[0].data.split('|');
+	var values = data.nodes[0].data.split(String.fromCharCode(23));
 	
 	const panel = document.getElementById('rightPanel');
 	
@@ -279,7 +279,9 @@ function displayInfoObject(data){
 	// object title section
 	const newTitle = document.createElement('div');
 	newInfo.appendChild(newTitle);
-	newTitle.textContent = data.nodes[0].TYPE;
+	let title = data.nodes[0].name+'\n'+data.nodes[0].type+'\n'+data.edges[0].count+' connections';
+	if (data.nodes[0].name == '') title = data.nodes[0].id+'\n'+data.nodes[0].type;
+	newTitle.textContent = title;
 	newTitle.id = 'title';
 
     const newDiv = document.createElement('div');

@@ -1,5 +1,6 @@
 html, body {
 	height: 100%;
+	font-family: Arial, Helvetica, sans-serif;
 }
 
 #cy {
@@ -16,6 +17,11 @@ html, body {
 
 #info {
 	margin-left: 40px;
+}
+#title {
+	text-align: center;
+	white-space: pre-line;
+	font-weight: bold;
 }
 
 .infodata {

@@ -178,7 +178,7 @@ class PlwObject:
 		attributesForSearch.pop(b':OBJECT-NUMBER', None)
 		self.attributesForSearch = attributesForSearch
         # Flatten the attributes to improve the search latter. For 'global search'
-		self.valuesConcat = b'|'.join(self.attributesForSearch.values())
+		self.valuesConcat = bytes([23]).join(self.attributesForSearch.values())
 		PlwObject.instances[self.id] = self
 
 	def show(self):
@@ -609,8 +609,8 @@ def prepareNodesAndInsert(db_connection, cursor, batchSize=1000):
 			objId.append(obj.id.decode('utf-8'))
 			objName.append(obj.name.decode('utf-8'))
 			objType.append(obj.format.table_def.decode('utf-8'))
-			objAttributes.append('|'.join([x.decode('utf-8') for x in obj.attributes.keys()]))
-			objValues.append('|'.join([x.decode('utf-8', errors='replace') for x in obj.attributes.values()]))
+			objAttributes.append(chr(23).join([x.decode('utf-8') for x in obj.attributes.keys()]))
+			objValues.append(chr(23).join([x.decode('utf-8', errors='replace') for x in obj.attributes.values()]))
 			if len(objId) >= batchSize:
 				rows = list(zip(objId, objName, objType, objAttributes, objValues))
 				insertBatch(cursor, 'nodes', rows, ['ID', 'NAME', 'TYPE', 'ATTRIBUTES', 'DATA'])

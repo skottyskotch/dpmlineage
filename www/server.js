@@ -16,6 +16,8 @@ app.use('/src', express.static(path.join(__dirname, 'src')));
 // Objects api
 const sNodesFull = "select ID, NAME, TYPE from nodes;";
 const sEdgeFull = "with cte as (select ID from nodes) select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where SOURCE in (select ID from cte) or TARGET in (select ID from cte);";
+const sOneNode = "select ID, NAME, TYPE, ATTRIBUTES, DATA from nodes where ID in ('{0}');";
+const sOneNodeEdges = "select count(*) as count from edges where source = '{0}' or target = '{0}';";
 const sNodesFromOneTable = "select ID, NAME, TYPE, ATTRIBUTES, DATA from nodes where type in ('{0}');";
 const sEdgesFromOneTable = "with cte as (select ID from nodes where type in ('{0}'))select a.SOURCE, b.TYPE as SOURCE_TYPE, a.TARGET, c.TYPE as TARGET_TYPE, INATTRIBUTE, BYNAME from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where SOURCE in (select ID from cte) and TARGET in (select ID from cte);";
 const sNodesFromOneNode = "with cte as (select a.SOURCE, a.TARGET from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where a.SOURCE = '{0}' or a.TARGET = '{0}') select ID, NAME, TYPE, ATTRIBUTES, DATA from nodes where ID = '{0}' or ID in (select SOURCE from cte) or ID in (select TARGET from cte);";
@@ -88,6 +90,40 @@ app.get('/api/graph-data/tabledef', (req,res) => {
 });
 
 app.get('/api/graph-data/node', (req,res) => {
+	if (req.query.db && req.query.id) {
+		let sQueryNodes = format(sOneNode, req.query.id);
+		let sQueryEdges = format(sOneNodeEdges, req.query.id);
+		if (hDatabases[req.query.db] != undefined) {
+			let db = hDatabases[req.query.db];
+			db.serialize(() => {
+				db.all(sQueryNodes, (err, _nodes) => {
+					if (err) {
+						if (err.message = "SQLITE_ERROR: no such column: undefined") err.message += ". Valid request is like /api/graph-data/node?db=databasename&ID=nodeid";
+						res.status(400).json({"error": err.message});
+						return;
+					}
+					db.all(sQueryEdges, (err, number_of_edges) => {
+						if (err) {
+							res.status(400).json({"error edges": err.message});
+							return;
+						}
+						const nodes = _nodes.map(node => ({id: node.ID, name: node.NAME, type: node.TYPE, attributes: node.ATTRIBUTES, data: node.DATA}));
+						const edges = number_of_edges;
+						res.json({class:'object',nodes, edges});
+					});
+				});
+			});
+		}
+		else{
+			res.json({"error":"database " +req.query.db + " not found"});
+		}
+    }
+    else {
+        res.json({"error":"Please request a database /api/graph-data?db=databasename.db&ID=nodeid"});
+    }
+});
+
+app.get('/api/graph-data/nodes', (req,res) => {
 	if (req.query.db) {
 		let sQueryNodes =  sNodesFull;
 		let sQueryEdges =  sEdgeFull;

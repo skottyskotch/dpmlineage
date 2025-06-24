@@ -80,16 +80,15 @@ function showThenLayout(elt, layoutOptions) {
 	let visibleElts = connectedElts.add(clickedNode);
 	visibleElts.show();
 	visibleElts.layout(layoutOptions).run({name: 'circle', animate: true});
-	console.log('show');
 }
 
 function discoverNode() {
 	if (clickedNode){
-		fetchData('graph-data/node', 'db', dbSelector.value, 'id', clickedNode.id())
+		fetchData('graph-data/nodes', 'db', dbSelector.value, 'id', clickedNode.id())
 		.then(data => graphData(data))
 		.then(data => addGraph(data))
 		.then(() => showThenLayout(clickedNode, {name: 'circle', animate: true}))
-		.then(() => colorNodesOnClick);
+		.then(() => colorNodesOnClick());
 	}
 }
 
@@ -143,7 +142,7 @@ $(document).ready(function() {
 			initSelectorButtons('#centerTable');
 		}
 		else{
-			fetchData('graph-data/node', 'db', databaseSelected, 'table', tableSelected)
+			fetchData('graph-data/nodes', 'db', databaseSelected, 'table', tableSelected)
 			.then(data => {
 				data.nodes.forEach(item => {
 					const object = document.createElement('option');
@@ -182,7 +181,7 @@ $(document).ready(function() {
 	$('#runTable').click(function() {
 		if (cy) cy.elements().remove();
 		if (databaseSelected != "" && tableSelected != "") {
-			fetchData('graph-data/node', 'db', databaseSelected, 'table', tableSelected)
+			fetchData('graph-data/nodes', 'db', databaseSelected, 'table', tableSelected)
 			.then(data => graphData(data))
 			.then(data => buildGraph(data));
 		}
@@ -198,7 +197,7 @@ $(document).ready(function() {
 	$('#runObject').click(function() {
 		if (cy) cy.elements().remove();
 		if (databaseSelected != "" && objectSelected != "") {
-			fetchData('graph-data/node', 'db', databaseSelected, 'id', objectSelected)
+			fetchData('graph-data/nodes', 'db', databaseSelected, 'id', objectSelected)
 			.then(data => graphData(data))
 			.then(data => buildGraph(data));
 		}
