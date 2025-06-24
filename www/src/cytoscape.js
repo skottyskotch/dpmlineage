@@ -96,6 +96,14 @@ function buildGraph(data) {
 	cy.on('click', 'node', onClickNode);
 }
 
+function addGraph(data){
+	if (cy) {
+		const [nodes, edges, style, layout] = data;
+		let addedNodes =  cy.add({nodes: nodes, edges: edges, style: style});
+		// addedNodes.style({'display': 'none'});
+	}
+}
+	
 function centerOnNode(nodeId) {
 	const node = cy.getElementById(nodeId);
 	if (node.length > 0) {
@@ -111,23 +119,30 @@ function onClickNode(evt) {
 	$('#Isolate').addClass('active').prop('disabled', false);
 	
 	// activate the Discover button if there are any to discover
-	let hiddenNodes = cy.nodes(':hidden');
-	let neighborNodes = clickedNode.neighborhood('node');
-	let intersection = hiddenNodes.intersect(neighborNodes);
-	if (intersection.nonempty()) $('#Discover').addClass('active').prop('disabled', false);
+	fetchData('graph-data/node', 'db', dbSelector.value, 'id', clickedNode.id())
+	.then(data => {
+		if (data.nodes.some(node => cy.getElementById(node.id).empty())) { // if some in database aren't in the graph
+			$('#Discover').addClass('active').prop('disabled', false);
+		};
+	});
+
+	if (clickedNode.neighborhood('node').data([':hidden']).length > 0) { // if some are in the graph but hidden
+		$('#Discover').addClass('active').prop('disabled', false);
+	}
 	
 	if (clickedNode.data('class') == 'tableDef'){
 		fetchData('graph-data/tabledef', 'db', dbSelector.value, 'id', clickedNode.id())
 		.then(data => {displayInfoTable(data)});
 	}
-	// else if (clickedNode.data('class') == 'object') {
-		// fetchData('graph-data/node', 'db', dbSelector.value, 'id', clickedNode.id())
-		// .then(data => {displayInfoObject(data)});
-	// }
+	else if (clickedNode.data('class') == 'object') {
+		fetchData('graph-data/node', 'db', dbSelector.value, 'id', clickedNode.id())
+		.then(data => {displayInfoObject(data)});
+	}
 }
 
 function colorNodesOnClick() {
 	if (cy && clickedNode) {
+		console.log('color');
 		// clean styles
 		cy.nodes().forEach(n => {
 			n.style({
@@ -180,7 +195,7 @@ function colorNodesOnClick() {
 	}
 }
 
-function displayInfoTable(data){
+function displayInfoTable(){
 	const panel = document.getElementById('rightPanel');
 	
     const oldInfo = document.getElementById('info');
@@ -244,4 +259,49 @@ function displayInfoTable(data){
 			infoDiv2.appendChild(key);
 		};
 	});
+}
+
+function displayInfoObject(data){
+	var attributes = data.nodes[0].attributes.split('|');
+	var values = data.nodes[0].data.split('|');
+	var title = data.nodes[0].type;
+	
+	const panel = document.getElementById('rightPanel');
+	
+    const oldInfo = document.getElementById('info');
+    if (oldInfo) oldInfo.remove();
+	
+	// container of object info
+	const newInfo = document.createElement('div');
+	newInfo.id = 'info';
+	panel.appendChild(newInfo);
+
+	// object title section
+	const newTitle = document.createElement('div');
+	newInfo.appendChild(newTitle);
+	newTitle.textContent = data.nodes[0].TYPE;
+	newTitle.id = 'title';
+
+    const newDiv = document.createElement('div');
+    newDiv.id = 'infos';
+	newDiv.className = 'infodata';
+
+    for (let i = 0; i < attributes.length; i++) {
+        const key = document.createElement('div');
+        key.textContent = attributes[i];
+		// key.classList.add(`kv-${attributes[i]}`.replace(':','')); // <- dynamic class
+		
+        const value = document.createElement('div');
+        value.textContent = values[i];
+		// value.classList.add(`kv-${attributes[i]}`.replace(':',''));
+		
+		if (attributes[i] === ':NAME' || attributes[i] === ':OBJECT-NUMBER') {
+            key.classList.add('highlight-yellow');
+            value.classList.add('highlight-yellow');
+        }
+        newDiv.appendChild(key);
+        newDiv.appendChild(value);
+    }
+
+    newInfo.appendChild(newDiv);
 }

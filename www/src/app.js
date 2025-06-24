@@ -75,12 +75,21 @@ function isolateNode() {
 	}
 }
 
+function showThenLayout(elt, layoutOptions) {
+	let connectedElts = clickedNode.neighborhood();
+	let visibleElts = connectedElts.add(clickedNode);
+	visibleElts.show();
+	visibleElts.layout(layoutOptions).run({name: 'circle', animate: true});
+	console.log('show');
+}
+
 function discoverNode() {
 	if (clickedNode){
-		let connectedElts = clickedNode.neighborhood();
-		let visibleElts = connectedElts.add(clickedNode);
-		// cy.elements().not(visibleElts).hide();
-		visibleElts.show();
+		fetchData('graph-data/node', 'db', dbSelector.value, 'id', clickedNode.id())
+		.then(data => graphData(data))
+		.then(data => addGraph(data))
+		.then(() => showThenLayout(clickedNode, {name: 'circle', animate: true}))
+		.then(() => colorNodesOnClick);
 	}
 }
 
