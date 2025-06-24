@@ -1,13 +1,25 @@
- - installation
+ - install on a linux VM with node.js and python3
+unzip everything somewhere or git init
+chmod +x install.sh
+chmod +x start.sh
+
+ - windows
+ unzip everything somewhere or git init
+ install.bat
+ start.bat
+ Le install.bat vérifie que Python, git, Node.js & npm sont installés. Si un outil manque, il demande de l’installer (pas d’install automatique Windows car plus compliqué).
+ 
+ - Manual installation
 install python
 pip install pandas
 pip install inquirer
 pip install rich
 pip install regex
-for the graph visualization feature:
+graph visualization feature:
 install node.js
 go in www
 npm install
+
  - use:
 download a dpm.gz
 dpm_extract ...dpm.gz

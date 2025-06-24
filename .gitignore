@@ -2,3 +2,4 @@ raws/
 output/
 old/
 www/node_modules
+venv/
