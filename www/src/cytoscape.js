@@ -141,7 +141,6 @@ function onClickNode(evt) {
 }
 
 function colorNodesOnClick() {
-	console.log('colorNodesOnClick');
 	if (cy && clickedNode) {
 		// clean styles
 		cy.nodes().forEach(n => {
@@ -280,10 +279,13 @@ function displayInfoObject(data){
 	// object title section
 	const newTitle = document.createElement('div');
 	newInfo.appendChild(newTitle);
+	newTitle.className = 'title';
 	let title = data.nodes[0].name+'\n'+data.nodes[0].type+'\n'+data.edges[0].count+' connections';
-	if (data.nodes[0].name == '') title = data.nodes[0].id+'\n'+data.nodes[0].type;
+	if (data.nodes[0].name == '') title = data.nodes[0].id+'\n'+data.nodes[0].type+'\n'+data.edges[0].count+' connections';
+	newTitle.style.whiteSpace = 'pre-line';
 	newTitle.textContent = title;
 	newTitle.id = 'title';
+	newTitle.innerHTML = newTitle.textContent.replace(/\n/g, '<br>');
 
     const newDiv = document.createElement('div');
     newDiv.id = 'infos';

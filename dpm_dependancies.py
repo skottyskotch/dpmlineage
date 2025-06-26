@@ -70,15 +70,23 @@ class ColumnsDef:
 		NULLABLE = regexp.findall(text)[0]
 		regexp = regex.compile(b':COMMENT ([^ ]*)')
 		COMMENT = regexp.findall(text)[0]
-		regexp = regex.compile(rb':ENCRYPTION ([^ ]*)')
-		ENCRYPTION = regexp.findall(text)[0]
+		# regexp = regex.compile(rb':ENCRYPTION ([^ ]*)')
+		# regexp = regex.compile(rb':ENCRYPTION[^:]*([^\)]*)',regex.MULTILINE)
+		# regexp = regex.compile(rb':ENCRYPTION\s+([^\)]+)',regex.MULTILINE)
+		# ENCRYPTION = b''
+		# try:
+			# ENCRYPTION = regexp.findall(text)[0]
+		# except:
+			# pass
+			# print(ATT.decode())
+			# print(text.decode())
 		
 		self.ATT            = ATT
 		self.DATABASE_TYPE  = DATABASE_TYPE
 		self.LENGTH         = LENGTH
 		self.NULLABLE       = NULLABLE
 		self.COMMENT        = COMMENT
-		self.ENCRYPTION     = ENCRYPTION
+		# self.ENCRYPTION     = ENCRYPTION
 
 class PlwFormat:
 	# Those 'format' objects instances will be in a dictionnary {FORMAT_NAME: object}
@@ -89,7 +97,8 @@ class PlwFormat:
 		format_table_def = regex.match(pattern,text)[0]
 		pattern = regex.compile(rb'^:NAME "(.*)"$',regex.MULTILINE)
 		format_name = regex.findall(pattern,text)[0]
-		pattern = regex.compile(rb'\((:ATT.*)\)',regex.MULTILINE)
+		pattern = regex.compile(rb'\((:ATT[^\)]*)\)',regex.MULTILINE)
+		# pattern = regex.compile(rb'\((:ATT.*)\)',regex.DOTALL)
 		columns = []
 		for columns_text in regex.findall(pattern, text):
 			col = ColumnsDef(columns_text)
