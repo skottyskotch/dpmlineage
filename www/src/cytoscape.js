@@ -141,6 +141,7 @@ function onClickNode(evt) {
 }
 
 function colorNodesOnClick() {
+	console.log('colorNodesOnClick');
 	if (cy && clickedNode) {
 		// clean styles
 		cy.nodes().forEach(n => {
@@ -165,9 +166,8 @@ function colorNodesOnClick() {
 		});
 
 		// color the targets/sources
-		if (highlightModeMessage.classList.value == 'state-0' || highlightModeMessage.classList.value == 'state-1') var incomingNodes = clickedNode.incomers('edge').sources();
-		if (highlightModeMessage.classList.value == 'state-2' || highlightModeMessage.classList.value == 'state-1' ) var outgoingNodes = clickedNode.outgoers('edge').targets();
-		if (incomingNodes) {
+		if ($('#slider2Message').hasClass('state-0') || $('#slider2Message').hasClass('state-1')) {
+			var incomingNodes = clickedNode.incomers('edge').sources();
 			clickedNode.incomers('edge').forEach(edge => {edge.style({
 					'line-color': '#ffcc00',
 					'target-arrow-color': '#ffcc00'
@@ -179,7 +179,8 @@ function colorNodesOnClick() {
 				});
 			});
 		}
-		if (outgoingNodes) {
+		if ($('#slider2Message').hasClass('state-2') || $('#slider2Message').hasClass('state-1')) {
+			var outgoingNodes = clickedNode.outgoers('edge').targets();
 			clickedNode.outgoers('edge').forEach(edge => {edge.style({
 					'line-color': '#66ccff',
 					'target-arrow-color': '#66ccff'

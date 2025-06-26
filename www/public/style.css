@@ -86,6 +86,11 @@ html, body {
 	border-radius: 4px;
 	border: 1px solid #aaa;
 }
+.row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+}
 .selectorButton{
 	margin: 1px;
 	margin-left: 2px;
@@ -108,39 +113,45 @@ html, body {
     background-color: #008BFF;
 }
 
-#highlightSelector {
-	width: 4%;
+.highlightSelector {
+	margin: 4px;
+	width: 80px;
 }
-#slider {
+.slider {
+	/* padding: 1px 1px; */
 	-webkit-appearance: none;
 	display: inline-block;
 	width: 100%;
 	background: #d3d3d3;
 	outline: none;
 	opacity: 0.7;
-	border-radius: 16px;
+	border-radius: 10px;
 	-webkit-transition: .2s;
 	transition: opacity .2s;
 }
-#slider:hover {
+.slider:hover {
   opacity: 1;
 }
-#highlightModeMessage {
-	padding: 1px 1px;
+.sliderMessage{
+	/* padding: 1px 1px; */
+	text-align: center;
 	background-color: #ddd;
-	border-radius: 8px;
+	border-radius: 10px;
 	text-align: center;
 	user-select: none;
 	/* font-weight: bold; */
 	transition: background-color 0.3s;
 }
-#highlightModeMessage.state-0 {
+.sliderMessage.state-0 {
+	text-align: center;
 	background-color: #ffcc00; /* Incomers */
 }
-#highlightModeMessage.state-1 {
+.sliderMessage.state-1 {
+	text-align: center;
 	background-color: #ccc; /* Both */
 }
-#highlightModeMessage.state-2 {
+.sliderMessage.state-2 {
+	text-align: center;
 	background-color: #66ccff;     /* Outgoers */
 }
 
@@ -213,3 +224,8 @@ html, body {
 .infoPanelButton:hover:not(:disabled) {
     background-color: #008BFF;
 }
+
+
+
+
+

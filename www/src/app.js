@@ -46,11 +46,71 @@ function activeCenterButton(eltId){
 
 function linkHighlighterSelectorUpdate() {
 	const value = $(this).val();
-	highlightModeMessage.classList.remove('state-0', 'state-1', 'state-2');
-	highlightModeMessage.classList.add(`state-${value}`);
+	$('#slider2Message').removeClass('state-0 state-1 state-2');
+	$('#slider2Message').addClass(`state-${value}`);
 	const labels = ['Incomers', 'In/Out', 'Outgoers'];
-	highlightModeMessage.textContent = labels[value];
+	$('#slider2Message').text(labels[value]);
 	colorNodesOnClick();
+}
+
+function sortObjectList() {
+	const value = $(this).val();
+	$('#slider1Message').removeClass('state-0 state-1 state-2');
+	$('#slider1Message').addClass(`state-${value}`);
+	const labels = ['Called', 'Sort by', 'Calling'];
+	$('#slider1Message').text(labels[value]);
+	recomputeObjectList();
+}
+
+function recomputeObjectList() {
+	const $select = $('#objectSelector');
+	if ($select.hasClass("select2-hidden-accessible")) {
+		$select.select2('destroy');
+	}
+
+	let options = $select.find('option').get();
+
+	if ($('#slider1Message').hasClass('state-0')){
+		options.sort((a, b) => {
+			const valA = parseFloat($(a).data('called')) || 0;
+			const valB = parseFloat($(b).data('called')) || 0;
+			return valA - valB;
+		});
+
+		$select.empty();
+		options.forEach(option => {
+		const $opt = $(option);
+			$opt.text(`${$opt.data('called')} called - ${$opt.data('name')}`);
+			$select.append($opt);
+		});
+	} else if ($('#slider1Message').hasClass('state-2')) {
+		options.sort((a, b) => {
+			const valA = parseFloat($(a).data('callers')) || 0;
+			const valB = parseFloat($(b).data('callers')) || 0;
+			return valA - valB;
+		});
+
+		$select.empty();
+		options.forEach(option => {
+			const $opt = $(option);
+			$opt.text(`${$opt.data('callers')} callers - ${$opt.data('name')}`);
+			$select.append($opt);
+		});
+	}
+	else {
+		$select.empty();
+		options.forEach(option => {
+			const $opt = $(option);
+			$opt.text($opt.data('name'));
+			$select.append($opt);
+		});
+	}
+
+	$select.select2({
+		placeholder: 'Select an object',
+		allowClear: true
+	});
+	$select.val(null).trigger('change'); // Ou $select.val('') si tu préfères
 }
 
 // Right panel functions
@@ -145,13 +205,22 @@ $(document).ready(function() {
 			fetchData('graph-data/nodes', 'db', databaseSelected, 'table', tableSelected)
 			.then(data => {
 				data.nodes.forEach(item => {
-					const object = document.createElement('option');
-					object.value = item.id;
-					object.textContent = item.id.replace(/^[^:]*:/,'').replace(/:$/,'') + " - " + item.name;
-					document.getElementById('objectSelector').appendChild(object);
+					let label = item.name;
+					if (item.name == '') label = item.id;
+					const $option = $('<option>', {
+						text: label,
+						value: item.id,
+						'data-name': item.name,
+						'data-called': item.nb_called,
+						'data-callers': item.nb_callers
+					});
+					$('#objectSelector').append($option);
 				});
 				$('#objectSelector').val(null);
 			});
+			
+			recomputeObjectList();
+			
 			$('#runTable').addClass('active').prop('disabled', false);
 			activeCenterButton(tableSelected);
 		}
@@ -210,8 +279,10 @@ $(document).ready(function() {
 		}
 	});
 	
-	$('#slider').on('input', linkHighlighterSelectorUpdate);
+	$('#slider1').on('input', sortObjectList);
 
+	$('#slider2').on('input', linkHighlighterSelectorUpdate);
+	
 	// init right panel
 	$('#toggleBtn').click(function() {
 		rightPanel.classList.toggle('collapsed');

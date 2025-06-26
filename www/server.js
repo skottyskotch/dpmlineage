@@ -18,7 +18,8 @@ const sNodesFull = "select ID, NAME, TYPE from nodes;";
 const sEdgeFull = "with cte as (select ID from nodes) select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where SOURCE in (select ID from cte) or TARGET in (select ID from cte);";
 const sOneNode = "select ID, NAME, TYPE, ATTRIBUTES, DATA from nodes where ID in ('{0}');";
 const sOneNodeEdges = "select count(*) as count from edges where source = '{0}' or target = '{0}';";
-const sNodesFromOneTable = "select ID, NAME, TYPE, ATTRIBUTES, DATA from nodes where type in ('{0}');";
+// const sNodesFromOneTable = "select ID, NAME, TYPE, ATTRIBUTES, DATA from nodes where type in ('{0}');";
+const sNodesFromOneTable = "select a.ID, a.NAME, a.TYPE, a.ATTRIBUTES, a.DATA, count(b.source) as nb_callers, count(c.target) as nb_called from nodes a left join edges b on b.source = a.ID left join edges c on c.target = a.ID where a.type in ('{0}') group by (a.id);";
 const sEdgesFromOneTable = "with cte as (select ID from nodes where type in ('{0}'))select a.SOURCE, b.TYPE as SOURCE_TYPE, a.TARGET, c.TYPE as TARGET_TYPE, INATTRIBUTE, BYNAME from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where SOURCE in (select ID from cte) and TARGET in (select ID from cte);";
 const sNodesFromOneNode = "with cte as (select a.SOURCE, a.TARGET from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where a.SOURCE = '{0}' or a.TARGET = '{0}') select ID, NAME, TYPE, ATTRIBUTES, DATA from nodes where ID = '{0}' or ID in (select SOURCE from cte) or ID in (select TARGET from cte);";
 const sEdgesFromOneNode = "select a.SOURCE, b.TYPE as SOURCE_TYPE, a.TARGET, c.TYPE as TARGET_TYPE, INATTRIBUTE, BYNAME from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where a.SOURCE = '{0}' or a.TARGET = '{0}'";
@@ -149,7 +150,7 @@ app.get('/api/graph-data/nodes', (req,res) => {
 							res.status(400).json({"error edges": err.message});
 							return;
 						}
-						const nodes = _nodes.map(node => ({id: node.ID, name: node.NAME, type: node.TYPE, attributes: node.ATTRIBUTES, data: node.DATA}))
+						const nodes = _nodes.map(node => ({id: node.ID, name: node.NAME, type: node.TYPE, attributes: node.ATTRIBUTES, data: node.DATA, nb_called: node.nb_called, nb_callers: node.nb_callers}))
 						const edges = _edges.map(edge => ({id: edge.Id, source: edge.SOURCE, source_type: edge.SOURCE_TYPE, target: edge.TARGET, target_type: edge.TARGET_TYPE, inattr: edge.INATTRIBUTE, byname: edge.BYNAME}))
 						res.json({class:'object',nodes, edges});
 					});

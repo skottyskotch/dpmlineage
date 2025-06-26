@@ -27,20 +27,23 @@
 			<button class="selectorButton" id="runTable" disabled>run</button>
 		</div>
 		<div class="selectorSection">
-			<select id="objectSelector" style="width: 300px;">
+			<select id="objectSelector" style="width: 350px;">
 				<option value="" disabled selected hidden>-- Select an object --</option>
 			</select>
 			<button class="selectorButton" id="centerObject" disabled>center</button>
 			<button class="selectorButton" id="runObject" disabled>run</button>
+				<div class="highlightSelector">
+					<div class="sliderMessage" id="slider1Message">Sorted by</div>
+					<input class="slider" id="slider1" type="range" min="0" max="2" value="1">
+				</div>
+
 		</div>
-		<div id="highlightSelector">
-			<input id="slider" type="range" min="0" max="2" value="1">
-			<div class="state-1" id="highlightModeMessage">In/Out</div>
+		<div class="selectorSection">highlight
+			<div class="highlightSelector">
+				<input class="slider" id="slider2" type="range" min="0" max="2" value="1">
+				<div class="sliderMessage state-1" id="slider2Message">In/Out</div>
+			</div>
 		</div>
-		<!-- <button id="Isolate">Isolate</button> -->
-		<!-- <button id="Expand">Expand</button> -->
-		<!-- <button id="Full" style="padding: 10px 12px; border-radius: 4px; background-color: #007BFF; color: white; border: none;">Full</button> -->
-		<!-- <button id="admin" style="padding: 10px 12px; border-radius: 4px; background-color: #007BFF; color: white; border: none;" onclick="window.location.href='/autre-page'">Admin</button> -->
 	</div>
 	<h2>Planisware configuration graph</h2></div>
 	<div id="cy"></div>
