@@ -1,17 +1,23 @@
 const express = require('express');
+const session = require('express-session');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
+
 const app = express();
 const port = 3000;
-
+app.use(session({
+    secret: 'tonSecretDeSession',  // Une clé secrète pour sécuriser la session
+    resave: false,                // Ne pas forcer la sauvegarde de la session si elle n'a pas été modifiée
+    saveUninitialized: false,     // Ne pas créer de session pour les utilisateurs qui ne sont pas authentifiés
+    cookie: { secure: false }     // Utiliser `true` si tu es en HTTPS (sinon, garde `false` en développement)
+}));
 app.use(express.urlencoded({ extended: true }));
-// Serve static files from the 'public' directory
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/src', express.static(path.join(__dirname, 'src')));
 
 // useful db queries for apis
-// var depth = 1;
 
 // Objects api
 const sNodesFull = "select ID, NAME, TYPE from nodes;";
@@ -187,6 +193,23 @@ app.get('/api/graph-data/class', (req,res) => {
     else {
         res.json({"error":"Please request a database /api/graph-data?db=databasename.db&ID=nodeid"});
     }
+});
+
+app.get('/page2', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Page 2</title>
+    </head>
+    <body>
+        <h1>Bienvenue sur la deuxième page !</h1>
+        <a href="/"><button>Retour à la page 1</button></a>
+    </body>
+    </html>
+  `);
 });
 
 app.listen(port, () => {

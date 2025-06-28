@@ -26,28 +26,29 @@ def init_object(self, plwFormat, tableDefColumns, dpmLine, cls):
 		obj_identifier = values[[x.ATT for x in tableDefColumns].index(cls.keyID)] + b'_' + values[[x.ATT for x in tableDefColumns].index(b':OFFSET')]
 		# decode :DATA from base85
 		data = values[[x.ATT for x in tableDefColumns].index(b':DATA')]
-		# try:
 		values[[x.ATT for x in tableDefColumns].index(b':DATA')] = base64.a85decode(values[[x.ATT for x in tableDefColumns].index(b':DATA')])
 		values = [value.replace(b'\n',b'') for value in values]
-		# except:
-			# values[[x.ATT for x in tableDefColumns].index(b':DATA')] = data
-	else:
-		obj_identifiers = []
-		for eachKey in cls.other_indexes:
-			obj_identifiers.append(values[[x.ATT for x in tableDefColumns].index(eachKey)])
-		obj_identifier = b"_".join(obj_identifiers)
+	else: #exceptions
+		# for user-dataset-use: :TABLE-INDEX (NIL) but :OTHER-INDEXES ((:PROVIDER))
+		if cls.name in ['#%GENERIC-IO:USER-DATASET-USE:']:
+			obj_identifier = values[[x.ATT for x in tableDefColumns].index(b':USER')] + b'_' + values[[x.ATT for x in tableDefColumns].index(b':PROVIDER')]
+		else:
+			obj_identifiers = []
+			for eachKey in cls.other_indexes:
+				obj_identifiers.append(values[[x.ATT for x in tableDefColumns].index(eachKey)])
+			obj_identifier = b"_".join(obj_identifiers)
 	filename = obj_identifier.decode('utf-8')
 	# for the classes with a :BLOB keyID, this identifier is not unique for the objects. filenames are ':BLOB_' + md5hash
 	# if cls.keyID.decode('utf-8') == ':BLOB':
 		# md5hash = hashlib.md5(dpmLine).hexdigest()
 		# filename = filename + '_' + md5hash
+	self.id = obj_identifier
 	self.plwFormat = PlwFormat.instances[plwFormat.decode('utf-8')]
 	self.type_directory = regex.sub(rb'[:\?\*<>\|]',b'_',plwFormat)
 	self.values = values
 	self.PlwFile = ''
 	self.directory = ''
 	cls.instances.append(self)
-	self.id = obj_identifier
 	self.filename = filename
 	if cls.name in ['#%DATABASE-IO:USER-PARAMETER:']:
 	# pdf, doc and thumbnail filenames are  managed by checksum, not increment anymore
@@ -266,10 +267,10 @@ class PlwFormat:
 		
 		# objects that comes from a format with an empty :index will be based on the first of the :other indexes
 		format_keyID = format_table_index
-		if format_keyID == '':
+		if format_keyID == b'':
 			format_keyID = format_other_indexes[0]
 			# user-parameter have  :other-indexes ((:USER :KEY) (:USER))
-			if format_table_def.decode('utf-8') == '#%DATABASE-IO:USER-PARAMETER:':
+			if format_table_def == b'#%DATABASE-IO:USER-PARAMETER:':
 				format_keyID = format_keyID.split(b" ")[0]
 		
 		# les clés du hash des formats sont en string car on va les utiliser pour créer des classes avec l'instanciateur de classe python type() qui veut un string en argument

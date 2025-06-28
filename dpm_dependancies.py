@@ -167,7 +167,9 @@ class PlwObject:
 		tableDefColumns = self.format.columns
 		for line in regex.split(b'\n',text)[1:]:
 			self.values.append(regex.split(b'\t',line)[1])
-		if self.format.keyID != b'NIL' and self.format.keyID != b':BLOB':
+		if self.format.table_def == b'#%GENERIC-IO:USER-DATASET-USE:':
+			self.id = self.values[[x.ATT for x in tableDefColumns].index(b':USER')] + b'_' + self.values[[x.ATT for x in tableDefColumns].index(b':PROVIDER')]
+		elif self.format.keyID != b'NIL' and self.format.keyID != b':BLOB':
 			self.id = self.values[[x.ATT for x in tableDefColumns].index(self.format.keyID)]
 		elif self.format.keyID == b':BLOB':
 			self.id = self.values[[x.ATT for x in tableDefColumns].index(self.format.keyID)] + b'_' + self.values[[x.ATT for x in tableDefColumns].index(b':OFFSET')]
