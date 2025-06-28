@@ -36,12 +36,17 @@ open your navigator to localhost:3000
 api endpoint at localhost:3000/api/graph-data
 
 # todo:
-color arrows the same as the edge
-on click a link on class graph: lists the objects in the right panel
-on click a graph node: 
-	expand will replace the node by a subgrpah of objects in the class
-	run will draw the object graph from this class + link to other classes
-
+ - on click a link class-class: lists the objects in the right panel
+ - on click a link object-object: show the matching in the right panel
+ - easy filter the lesser called to identify the to be cleaned
+ - mark object "analysed": a button to mark in the first page, they are listed in a 2nd page. notepad? store in db? extract?
+ - nodes from same class are colored with a generated color, one color per class
+ - double click selects all nodes from the same class
+ - control click: multi selection
+ - way to cluster the selection
+ - allow the moving the cluster
+ - try other layout
+ - slides!
 # flaws:
 javascript l2: 
  - fixer la conversion des blob base85 en text
@@ -62,12 +67,3 @@ Il serait tres efficace de dresser un liste de classe qui peuvent être cherché
 (en fait là pour l'algo, c'est ne chercher dans les attributes settings que lors du scan de la classe USER ATTRIBUTE, ADDED ATTRIBUTE like. Et pour le coup ne chercher que le champ name de l'attribut dans le champ name du setting)
 
 Il faudrait arréter les dpm et faire ça directement en base
-
-graph improvement:
- - nodes from same class are colored with a generated color, one color per class
- - double click selects all nodes from the same class
- - control click: multi selection
- - way to cluster the selection
- - allow the moving the cluster
- - try other layout
- - try a graph where nodes are tabldefinition, an edge is created if at least one edge between objects exists. The number of objects to objects edges is a label for this tabledef to tabledef edge
