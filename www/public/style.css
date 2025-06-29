@@ -1,6 +1,7 @@
 html, body {
 	height: 100%;
 	font-family: Arial, Helvetica, sans-serif;
+	overflow: hidden; /* Supprime les scrollbars */
 }
 
 #cy {
@@ -17,11 +18,7 @@ html, body {
 
 #info {
 	margin-left: 40px;
-}
-#title {
-	text-align: center;
-	white-space: pre-line;
-	font-weight: bold;
+	white-space: nowrap;
 }
 
 .infodata {
@@ -36,9 +33,6 @@ html, body {
 .highlight-green {
     background-color: lightgreen;
 }
-/* .highlight-blue { */
-    /* background-color: lightblue; */
-/* } */
 .highlight-yellow {
 	background-color: yellow !important;
 }
@@ -48,6 +42,7 @@ html, body {
 	font-family: monospace;
 	margin-top: 10px;
 	text-align: center;
+	white-space: pre-line;
 	background-color: #f0f0f0;
 }
 .infoSection {
@@ -56,6 +51,7 @@ html, body {
     gap: 4px 12px;
 	text-align: left;
 	font-weight: 500;
+	white-space: nowrap;
     background-color: #f0f0f0;
     border-radius: 5px;
     margin-top: 5px;
@@ -173,7 +169,7 @@ html, body {
 	top: 0;
 	right: 0;
 	z-index: 100;
-	overflow: hidden;
+	overflow: auto;
 }
 .rightPanel.collapsed {
 	transform: translateX(90%);

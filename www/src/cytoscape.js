@@ -94,6 +94,14 @@ function buildGraph(data) {
 	if (tableSelected != null) activeCenterButton(tableSelected);
 	if (objectSelected != null) activeCenterButton(objectSelected);
 	cy.on('click', 'node', onClickNode);
+	cy.on('mousedown', 'edge', function(event) {
+		const edge = event.target;
+		console.log(edge); // À définir
+	});
+
+	cy.on('mouseup', 'edge', function(event) {
+		console.log('down'); // À définir
+	});
 }
 
 function addGraph(data){

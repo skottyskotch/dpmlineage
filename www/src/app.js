@@ -152,6 +152,13 @@ function discoverNode() {
 	}
 }
 
+function markNode() {
+	if (clickedNode){
+		fetchData('submit', 'db', dbSelector.value, 'id', clickedNode.id(), 'notepad', 'test');
+		console.log('marked');
+	}
+}
+
 $(document).ready(function() {
 	// init selectors
     $('#dbSelector').select2({
@@ -299,6 +306,8 @@ $(document).ready(function() {
 	$('#Isolate').click(isolateNode);
 	
 	$('#Discover').click(discoverNode);
+	
+	$('#Mark').click(markNode);
 
 	// init the available databases
 	fetchData('database')

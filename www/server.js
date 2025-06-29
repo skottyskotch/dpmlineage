@@ -6,6 +6,7 @@ const fs = require('fs');
 
 const app = express();
 const port = 3000;
+
 app.use(session({
     secret: 'tonSecretDeSession',  // Une clé secrète pour sécuriser la session
     resave: false,                // Ne pas forcer la sauvegarde de la session si elle n'a pas été modifiée
@@ -13,7 +14,6 @@ app.use(session({
     cookie: { secure: false }     // Utiliser `true` si tu es en HTTPS (sinon, garde `false` en développement)
 }));
 app.use(express.urlencoded({ extended: true }));
-
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/src', express.static(path.join(__dirname, 'src')));
 
@@ -43,9 +43,21 @@ const sQueryTableDefObjectEdges = "SELECT n1.type AS SOURCE, n2.type AS TARGET, 
 
 const dbFolder = '../output/';
 let hDatabases = {};
+
 fs.readdirSync(dbFolder).forEach(dbFile => {
     if (dbFile.endsWith('.db')) {
         hDatabases[dbFile] = new sqlite3.Database(dbFolder + '/' + dbFile);
+		hDatabases[dbFile].run(`
+				CREATE TABLE IF NOT EXISTS markedObjects 
+				(id INTEGER PRIMARY KEY AUTOINCREMENT, 
+				session_id TEXT NOT NULL, 
+				timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+				object_id TEXT,
+				notepad TEXT)`, (err) => {
+			if (err) {
+				console.error("Error when creating a table :", err.message);
+			}
+		});
     }
 });
 
@@ -195,14 +207,14 @@ app.get('/api/graph-data/class', (req,res) => {
     }
 });
 
-app.get('/page2', (req, res) => {
+app.get('/history', (req, res) => {
   res.send(`
     <!DOCTYPE html>
     <html lang="fr">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Page 2</title>
+        <title>History</title>
     </head>
     <body>
         <h1>Bienvenue sur la deuxième page !</h1>
@@ -210,6 +222,25 @@ app.get('/page2', (req, res) => {
     </body>
     </html>
   `);
+});
+
+app.get('/api/submit', (req,res) => {
+	if (req.query.db && req.query.id && req.query.notepad) {
+		console.log('est');
+		if (hDatabases[req.query.db] != undefined) {
+			let db = hDatabases[req.query.db];
+			const session = req.sessionID;
+			const node = req.query.id;
+			const notepad = req.query.notepad;			
+			const sInsertSQL = format("INSERT INTO markedObjects (session_id, object_id, notepad) VALUES ('{0}', '{1}', '{2}')", session, node, notepad);
+			console.log(sInsertSQL);
+			db.run(sInsertSQL, (err) => {
+				if (err) {
+					console.error("Error when creating a table :", err.message);
+				}
+			});
+		}
+	};
 });
 
 app.listen(port, () => {
