@@ -17,7 +17,7 @@ async function fetchData(endpoint, ...args){
 	}
 	const query = 'http://localhost:3000/api/' + endpoint + sParams;
     console.log(query);
-    const response = await fetch(query);
+    const response = await fetch(query,{method: 'GET', credentials: 'include'});
     const data = await response.json();
     return data;
 }
@@ -155,7 +155,6 @@ function discoverNode() {
 function markNode() {
 	if (clickedNode){
 		fetchData('submit', 'db', dbSelector.value, 'id', clickedNode.id(), 'notepad', 'test');
-		console.log('marked');
 	}
 }
 

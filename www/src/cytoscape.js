@@ -125,6 +125,7 @@ function onClickNode(evt) {
 	
 	// activate the Isolate button
 	$('#Isolate').addClass('active').prop('disabled', false);
+	$('#Mark').addClass('active').prop('disabled', false);
 	
 	// activate the Discover button if there are any to discover
 	fetchData('graph-data/nodes', 'db', dbSelector.value, 'id', clickedNode.id())

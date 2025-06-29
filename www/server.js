@@ -226,14 +226,12 @@ app.get('/history', (req, res) => {
 
 app.get('/api/submit', (req,res) => {
 	if (req.query.db && req.query.id && req.query.notepad) {
-		console.log('est');
 		if (hDatabases[req.query.db] != undefined) {
 			let db = hDatabases[req.query.db];
 			const session = req.sessionID;
 			const node = req.query.id;
 			const notepad = req.query.notepad;			
 			const sInsertSQL = format("INSERT INTO markedObjects (session_id, object_id, notepad) VALUES ('{0}', '{1}', '{2}')", session, node, notepad);
-			console.log(sInsertSQL);
 			db.run(sInsertSQL, (err) => {
 				if (err) {
 					console.error("Error when creating a table :", err.message);
