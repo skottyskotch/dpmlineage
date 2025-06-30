@@ -281,11 +281,10 @@ $(document).ready(function() {
 	});
 	
 	$('#runCompletion').click(function() {
-		if (cy) cy.elements().remove();
-		if (databaseSelected != "" && objectSelected != "") {
-			fetchData('graph-data/nodes', 'db', databaseSelected, 'id', objectSelected)
+		if (databaseSelected != "" && objectSelected != "" && cy.getElementById(objectSelected).data('type') == '#%GENERIC-IO:COMMON-DATASET:') {
+			fetchData('graph-data/nodes', 'db', databaseSelected, 'file', cy.getElementById(objectSelected).data('name'))
 			.then(data => graphData(data))
-			.then(data => buildGraph(data));
+			.then(data => addGraph(data));
 		}
 		$('#centerObject').addClass('active').prop('disabled', false);
 	});

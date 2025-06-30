@@ -110,7 +110,7 @@ function addGraph(data){
 		// addedNodes.style({'display': 'none'});
 	}
 }
-	
+
 function centerOnNode(nodeId) {
 	const node = cy.getElementById(nodeId);
 	if (node.length > 0) {
