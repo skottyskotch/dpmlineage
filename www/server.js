@@ -18,7 +18,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/src', express.static(path.join(__dirname, 'src')));
 
 // useful db queries for apis
-
+with nodeid as (select id from nodes where name = 'SAN_CF_RISK_MANAGEMENT'),
+othernodeid as (select source as id from edges where target in (select id from nodeid) 
+union select target as id from edges where source in (select id from nodeid))
+select count(*) from edges where target in (select id from othernodeid) and source in (select source from othernodeid);
 // Objects api
 const sNodesFull = "select ID, NAME, TYPE from nodes;";
 const sEdgeFull = "with cte as (select ID from nodes) select SOURCE, TARGET, INATTRIBUTE, BYNAME from edges where SOURCE in (select ID from cte) or TARGET in (select ID from cte);";

@@ -41,7 +41,7 @@ function graphData(data) {
 		}
 		else {
 			let foundby = ' (name)';
-			if (edge.byname == 'FALSE') foundby = ' (ONB)';
+			if (edge.byname == 'False') foundby = ' (ONB)';
 			edgeStruct = {
 				id: edge.source + '_' + edge.target,
 				source: edge.source,
@@ -96,11 +96,10 @@ function buildGraph(data) {
 	cy.on('click', 'node', onClickNode);
 	cy.on('mousedown', 'edge', function(event) {
 		const edge = event.target;
-		console.log(edge); // À définir
 	});
 
 	cy.on('mouseup', 'edge', function(event) {
-		console.log('down'); // À définir
+		// console.log('down'); // À définir
 	});
 }
 

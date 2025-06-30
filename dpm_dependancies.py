@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# threshold: len(obj.name) > 4
 import os
 import regex # pip install regex
 import argparse
@@ -432,6 +433,7 @@ def indexDependancies(globalIndex):
 	nMaxClassNameLength = max([len(x) for x in PlwFormat.instances.keys()])
 	with Progress() as progress:
 		i = 0
+		l = 0
 		main_task = progress.add_task("[cyan]Objects searched...", total = len(PlwObject.instances))
 		for plwFormat in PlwFormat.instances.values():
 			for obj in plwFormat.objects:
@@ -443,45 +445,49 @@ def indexDependancies(globalIndex):
 					for otherObj in otherPlwFormat.objects:
 						if otherObj != obj:
 							if obj.format.searchedByONB and obj.onb in otherObj.valuesConcat:
+								l+=1
 								globalIndex[obj.id].append(otherObj)
-							if obj.format.searchedByNAME and obj.name in otherObj.valuesConcat:
+							if obj.format.searchedByNAME and len(obj.name) > 4 and obj.name in otherObj.valuesConcat:
+								l+=1
 								globalIndex[obj.id].append(otherObj)
-							if otherObj.js2 != b'' and not otherObj in globalIndex[obj.id] and obj.name in otherObj.js2:
+							if otherObj.js2 != b'' and not otherObj in globalIndex[obj.id] and len(obj.name) > 4 and obj.name in otherObj.js2:
+								l+=1
 								globalIndex[obj.id].append(otherObj)
-				progress.update(main_task, description = "[cyan]Object indexation " + str(i) + "/" + str(len(PlwObject.instances)) + ". Found " + str(len(globalIndex.keys())) + " objects called by other(s)...", advance = 1)
+				progress.update(main_task, description = "[cyan]Object indexation " + str(i) + "/" + str(len(PlwObject.instances)) + ". Found " + str(len(globalIndex.keys())) + " objects called by other(s) (" + str(l) + ") links...", advance = 1)
 
 def indexFunctions(globalIndex):
 	jsObjects = []
 	functions = []
 	methods = []
-	for obj in PlwFormat.instances['#%ARCHIVE:ENVIRONMENT-OBJECT:'].objects:
-		if obj.js2 != b'':
-			jsObjects.append(obj)
-	with Progress() as progress:
-		main_task = progress.add_task("[cyan]Functions parsing...", total = len(jsObjects))
-		for obj in jsObjects:
-			regexp = regex.compile(b'^\s*function\s+([^\(]+)\(')
-			obj.functions = regexp.findall(obj.js2)
-			regexp = regex.compile(b'^\s*method\s+([^\(]+) on')
-			obj.methods = regexp.findall(obj.js2)
-	with Progress() as progress:
-		i=0
-		main_task = progress.add_task("[cyan]Functions indexation...", total = len(jsObjects))
-		for plwFormat in PlwFormat.instances.values():
-			for jsObj in jsObjects:
-				i+=1
-				for otherPlwFormat in PlwFormat.instances.values():
-					if plwFormat.table_def == b'#%TEMP-TABLE:_ATV_PT_ATT_VAL:' and otherPlwFormat.table_def == b'#%TEMP-TABLE:_ATV_PT_ATT_VAL:':
-						continue
-					for otherObj in otherPlwFormat.objects:
-						if otherObj != jsObj:
-							for function in jsObj.functions:
-								if function in otherObj.valuesConcat:
-									globalIndex[jsObj.id].append(otherObj)
-							for method in jsObj.methods:
-								if method in otherObj.valuesConcat:
-									globalIndex[jsObj.id].append(otherObj)
-				progress.update(main_task, description = "[cyan]Functions indexation " + str(i) + "/" + str(len(jsObjects)) + ". Found " + str(len(globalIndex.keys())) + " functions called in other objects...", advance = 1)
+	if '#%ARCHIVE:ENVIRONMENT-OBJECT:' in PlwFormat.instances:
+		for obj in PlwFormat.instances['#%ARCHIVE:ENVIRONMENT-OBJECT:'].objects:
+			if obj.js2 != b'':
+				jsObjects.append(obj)
+		with Progress() as progress:
+			main_task = progress.add_task("[cyan]Functions parsing...", total = len(jsObjects))
+			for obj in jsObjects:
+				regexp = regex.compile(rb'^\s*function\s+([^\(]+)\(')
+				obj.functions = regexp.findall(obj.js2)
+				regexp = regex.compile(rb'^\s*method\s+([^\(]+) on')
+				obj.methods = regexp.findall(obj.js2)
+		with Progress() as progress:
+			i=0
+			main_task = progress.add_task("[cyan]Functions indexation...", total = len(jsObjects))
+			for plwFormat in PlwFormat.instances.values():
+				for jsObj in jsObjects:
+					i+=1
+					for otherPlwFormat in PlwFormat.instances.values():
+						if plwFormat.table_def == b'#%TEMP-TABLE:_ATV_PT_ATT_VAL:' and otherPlwFormat.table_def == b'#%TEMP-TABLE:_ATV_PT_ATT_VAL:':
+							continue
+						for otherObj in otherPlwFormat.objects:
+							if otherObj != jsObj:
+								for function in jsObj.functions:
+									if function in otherObj.valuesConcat:
+										globalIndex[jsObj.id].append(otherObj)
+								for method in jsObj.methods:
+									if method in otherObj.valuesConcat:
+										globalIndex[jsObj.id].append(otherObj)
+					progress.update(main_task, description = "[cyan]Functions indexation " + str(i) + "/" + str(len(jsObjects)) + ". Found " + str(len(globalIndex.keys())) + " functions called in other objects...", advance = 1)
 
 def processDepLinks(globalIndex):
 	with Progress() as progress:

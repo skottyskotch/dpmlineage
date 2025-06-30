@@ -237,6 +237,7 @@ $(document).ready(function() {
 		if (objectSelected == null) {
 			initSelectorButtons('#runObject');
 			initSelectorButtons('#centerObject');
+			$('#runCompletion').addClass('active').prop('disabled', false);
 		}
 		else{
 			$('#runObject').addClass('active').prop('disabled', false);
@@ -270,6 +271,16 @@ $(document).ready(function() {
 	});
 	
 	$('#runObject').click(function() {
+		if (cy) cy.elements().remove();
+		if (databaseSelected != "" && objectSelected != "") {
+			fetchData('graph-data/nodes', 'db', databaseSelected, 'id', objectSelected)
+			.then(data => graphData(data))
+			.then(data => buildGraph(data));
+		}
+		$('#centerObject').addClass('active').prop('disabled', false);
+	});
+	
+	$('#runCompletion').click(function() {
 		if (cy) cy.elements().remove();
 		if (databaseSelected != "" && objectSelected != "") {
 			fetchData('graph-data/nodes', 'db', databaseSelected, 'id', objectSelected)
