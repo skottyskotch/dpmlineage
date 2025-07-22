@@ -126,14 +126,15 @@ function stopResize() {
 	document.removeEventListener('mouseup', stopResize);
 }
 
-function isolateNode() {
-	if (clickedNode){
-		let connectedElts = clickedNode.neighborhood();
-		let visibleElts = connectedElts.add(clickedNode);
+function isolateNode(targetNode) {
+	if (! (targetNode instanceof MouseEvent)) targetNode = clickedNode;
+	if (targetNode.isNode()){
+		let connectedElts = targetNode.neighborhood();
+		let visibleElts = connectedElts.add(targetNode);
 		cy.elements().not(visibleElts).hide();
 		visibleElts.show();
 	}
-}
+} 
 
 function showThenLayout(elt, layoutOptions) {
 	let connectedElts = clickedNode.neighborhood();
@@ -142,13 +143,14 @@ function showThenLayout(elt, layoutOptions) {
 	visibleElts.layout(layoutOptions).run({name: 'circle', animate: true});
 }
 
-function discoverNode() {
-	if (clickedNode){
-		fetchData('graph-data/nodes', 'db', dbSelector.value, 'id', clickedNode.id())
+function discoverNodes(targetNode) {
+	if (! (targetNode instanceof MouseEvent)) targetNode = clickedNode;
+	if (targetNode.isNode()){
+		fetchData('graph-data/nodes', 'db', dbSelector.value, 'id', targetNode.id())
 		.then(data => graphData(data))
 		.then(data => addGraph(data))
-		.then(() => showThenLayout(clickedNode, {name: 'circle', animate: true}))
-		.then(() => colorNodesOnClick());
+		.then(() => showThenLayout(targetNode, {name: 'circle', animate: true}));
+		// .then(() => colorNodesOnClick());
 	}
 }
 
@@ -208,7 +210,7 @@ $(document).ready(function() {
 			initSelectorButtons('#centerTable');
 		}
 		else{
-			fetchData('graph-data/nodes', 'db', databaseSelected, 'table', tableSelected)
+			fetchData('graph-data/nodes/table', 'db', databaseSelected, 'table', tableSelected)
 			.then(data => {
 				data.nodes.forEach(item => {
 					let label = item.name;
@@ -255,13 +257,7 @@ $(document).ready(function() {
 	});
 	
 	$('#runTable').click(function() {
-		if (cy) cy.elements().remove();
-		if (databaseSelected != "" && tableSelected != "") {
-			fetchData('graph-data/nodes', 'db', databaseSelected, 'table', tableSelected)
-			.then(data => graphData(data))
-			.then(data => buildGraph(data));
-		}
-		$('#centerTable').addClass('active').prop('disabled', false);
+		runTableGraph();
 	});
 	
 	$('#centerTable').click(function() {
@@ -270,15 +266,7 @@ $(document).ready(function() {
 		}
 	});
 	
-	$('#runObject').click(function() {
-		if (cy) cy.elements().remove();
-		if (databaseSelected != "" && objectSelected != "") {
-			fetchData('graph-data/nodes', 'db', databaseSelected, 'id', objectSelected)
-			.then(data => graphData(data))
-			.then(data => buildGraph(data));
-		}
-		$('#centerObject').addClass('active').prop('disabled', false);
-	});
+	$('#runObject').click(runObjectGraph);
 	
 	$('#runCompletion').click(function() {
 		if (databaseSelected != "" && objectSelected != "" && cy.getElementById(objectSelected).data('type') == '#%GENERIC-IO:COMMON-DATASET:') {
@@ -314,7 +302,7 @@ $(document).ready(function() {
 
 	$('#Isolate').click(isolateNode);
 	
-	$('#Discover').click(discoverNode);
+	$('#Discover').click(discoverNodes);
 	
 	$('#Mark').click(markNode);
 
@@ -329,3 +317,23 @@ $(document).ready(function() {
         })
     });
 });
+
+function runObjectGraph() {
+	if (cy) cy.elements().remove();
+	if (databaseSelected != "" && objectSelected != null) {
+		fetchData('graph-data/nodes', 'db', databaseSelected, 'id', objectSelected)
+		.then(data => graphData(data))
+		.then(data => buildGraph(data));
+	}
+	$('#centerObject').addClass('active').prop('disabled', false);
+}
+
+function runTableGraph(tableNode = tableSelected) {
+	if (cy) cy.elements().remove();
+	if (databaseSelected != "" && tableNode != null) {
+		fetchData('graph-data/nodes/table', 'db', databaseSelected, 'table', tableNode)
+		.then(data => graphData(data))
+		.then(data => buildGraph(data));
+	}
+	$('#centerTable').addClass('active').prop('disabled', false);
+}

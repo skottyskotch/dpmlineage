@@ -1,4 +1,5 @@
 let clickedNode = null;
+let contextMenu = null;
 
 function graphData(data) {
 	const sClass = data.class;
@@ -77,6 +78,13 @@ function graphData(data) {
 				'target-arrow-shape': 'triangle',
 				'curve-style': 'bezier'
 			}
+		},
+		{
+			selector: ':selected',
+			style: {
+				"border-width": 2,
+				"border-color": "rgb(1,105,217)"
+			}
 		}
 	];
 	const layout = {name: 'circle'};
@@ -91,7 +99,73 @@ function buildGraph(data) {
 		style: style,
 		layout: layout
 	});
-	if (tableSelected != null) activeCenterButton(tableSelected);
+	
+	cy.on('cxttap', onRightClick);
+	
+	contextMenu = cy.contextMenus({
+		menuItems: [
+			{
+				id: 'select-neighborood',
+				content: 'Select all neighbors',
+				selector: 'node',
+				coreAsWell: true,
+				show: true,
+				onClickFunction: function (event) {
+					if (event.target.isNode()) {
+						cy.$(':selected').unselect();
+						event.target.neighborhood('node').select();
+						event.target.select();
+					}
+				},
+				hasTrailingDivider: false
+			},
+			{
+				id: 'isolate-node',
+				content: 'Isolate node',
+				selector: 'node',
+				coreAsWell: true,
+				show: true,
+				onClickFunction: function (event) {
+					if (event.target.isNode()) isolateNode(event.target);
+				},
+				hasTrailingDivider: false
+			},
+			{
+				id: 'unhide-connections',
+				content: 'Unhide connections',
+				selector: 'node',
+				coreAsWell: true,
+				show: true,
+				onClickFunction: function(event) {
+					if(event.target.isNode()) unhideConnections(event.target);
+				},
+				hasTrailingDivider: false
+			},
+			{
+				id: 'discover-nodes',
+				content: 'Discover nodes',
+				selector: 'node',
+				coreAsWell: true,
+				show: true,
+				onClickFunction: function(event) {
+					if(event.target.isNode()) discoverNodes(event.target);
+				},
+				hasTrailingDivider: true
+			},
+			{
+				id: 'draw-object-graph',
+				content: 'Draw object graph',
+				selector: 'node',
+				coreAsWell: true,
+				show: true,
+				onClickFunction: function(event) {
+					if(event.target.isNode() && event.target.attr('class') == 'tableDef') runTableGraph(event.target.id());
+				},
+				hasTrailingDivider: false
+			}
+		]
+	});
+	
 	if (objectSelected != null) activeCenterButton(objectSelected);
 	cy.on('click', 'node', onClickNode);
 	cy.on('mousedown', 'edge', function(event) {
@@ -146,6 +220,49 @@ function onClickNode(evt) {
 		fetchData('graph-data/node', 'db', dbSelector.value, 'id', clickedNode.id())
 		.then(data => {displayInfoObject(data)});
 	}
+}
+
+function onRightClick(event){
+	contextMenu.hideMenuItem('select-neighborood');
+	contextMenu.hideMenuItem('isolate-node');
+	contextMenu.hideMenuItem('unhide-connections');
+	contextMenu.hideMenuItem('draw-object-graph');
+	
+	if (event.target != cy && event.target.isNode()) {
+		const node = event.target;
+		if (!neighborhoodAlreadySelected(node)) contextMenu.showMenuItem('select-neighborood');
+		if (!alreadyIsolated(node)) contextMenu.showMenuItem('isolate-node');
+		if (!alreadyDisplayed(node)) contextMenu.showMenuItem('unhide-connections');
+		if (node.attr('class') == 'tableDef') contextMenu.showMenuItem('draw-object-graph');
+	}
+
+}
+
+function neighborhoodAlreadySelected(node){
+	const selected = cy.nodes(':selected');
+	const expected = node.closedNeighborhood('node');
+	const allMatch = expected.every(ele => selected.contains(ele));
+	return allMatch;
+}
+
+function alreadyIsolated(node) {
+	const shown = cy.elements().filter(ele => ele.visible());
+	const expected = node.closedNeighborhood();
+	if (expected.length !== shown.length) return false;
+	const allMatch = shown.every(ele => expected.contains(ele));
+	return allMatch;
+}
+
+function alreadyDisplayed(node) {
+	const hasHiddenEdge = node.connectedEdges().some(edge => edge.hidden());
+	const hasHiddenNeighbor = node.neighborhood('node').some(neighbor => neighbor.hidden());
+	return !(hasHiddenEdge || hasHiddenNeighbor);
+}
+
+function unhideConnections(node) {
+	node.neighborhood('node').some(neighbor => neighbor.show());
+	node.connectedEdges().some(edge => edge.show());
+	return true;
 }
 
 function colorNodesOnClick() {
@@ -318,3 +435,170 @@ function displayInfoObject(data){
 
     newInfo.appendChild(newDiv);
 }
+
+/*
+       var contextMenu = cy.contextMenus(
+{
+	menuItems: [
+		{
+		  id: 'remove',
+		  content: 'remove',
+		  tooltipText: 'remove',
+		  image: {src: "assets/remove.svg", width: 12, height: 12, x: 6, y: 4},
+		  selector: 'node, edge',
+		  onClickFunction: function (event) {
+			var target = event.target || event.cyTarget;
+			removed = target.remove();
+
+			contextMenu.showMenuItem('undo-last-remove');
+		  },
+		  hasTrailingDivider: true
+		},
+		{
+		  id: 'undo-last-remove',
+		  content: 'undo last remove',
+		  selector: 'node, edge',
+		  show: false,
+		  coreAsWell: true,
+		  onClickFunction: function (event) {
+			if (removed) {
+			  removed.restore();
+			}
+			contextMenu.hideMenuItem('undo-last-remove');
+		  },
+		  hasTrailingDivider: true
+		},
+		{
+		  id: 'color',
+		  content: 'change color',
+		  tooltipText: 'change color',
+		  selector: 'node',
+		  hasTrailingDivider: true,
+		  submenu: [
+			{
+			  id: 'color-blue',
+			  content: 'blue',
+			  tooltipText: 'blue',
+			  onClickFunction: function (event) {
+				let target = event.target || event.cyTarget;
+				target.style('background-color', 'blue');
+			  },
+			  submenu: [
+				{
+				  id: 'color-light-blue',
+				  content: 'light blue',
+				  tooltipText: 'light blue',
+				  onClickFunction: function (event) {
+					let target = event.target || event.cyTarget;
+					target.style('background-color', 'lightblue');
+				  },
+				},
+				{
+				  id: 'color-dark-blue',
+				  content: 'dark blue',
+				  tooltipText: 'dark blue',
+				  onClickFunction: function (event) {
+					let target = event.target || event.cyTarget;
+					target.style('background-color', 'darkblue');
+				  },
+				},
+			  ],
+			},
+			{
+			  id: 'color-green',
+			  content: 'green',
+			  tooltipText: 'green',
+			  onClickFunction: function (event) {
+				let target = event.target || event.cyTarget;
+				target.style('background-color', 'green');
+			  },
+			},
+			{
+			  id: 'color-red',
+			  content: 'red',
+			  tooltipText: 'red',
+			  onClickFunction: function (event) {
+				let target = event.target || event.cyTarget;
+				target.style('background-color', 'red');
+			  },
+			},
+		  ]
+		},
+		{
+		  id: 'add-node',
+		  content: 'add node',
+		  tooltipText: 'add node',
+		  image: {src: "assets/add.svg", width: 12, height: 12, x: 6, y: 4},
+		  coreAsWell: true,
+		  onClickFunction: function (event) {
+			var data = {
+			  group: 'nodes'
+			};
+
+			var pos = event.position || event.cyPosition;
+
+			cy.add({
+			  data: data,
+			  position: {
+				x: pos.x,
+				y: pos.y
+			  }
+			});
+		  }
+		},
+		{
+		  id: 'select-all-nodes',
+		  content: 'select all nodes',
+		  selector: 'node',
+		  coreAsWell: true,
+		  show: true,
+		  onClickFunction: function (event) {
+			selectAllOfTheSameType('node');
+
+			contextMenu.hideMenuItem('select-all-nodes');
+			contextMenu.showMenuItem('unselect-all-nodes');
+		  }
+		},
+		{
+		  id: 'unselect-all-nodes',
+		  content: 'unselect all nodes',
+		  selector: 'node',
+		  coreAsWell: true,
+		  show: false,
+		  onClickFunction: function (event) {
+			unselectAllOfTheSameType('node');
+
+			contextMenu.showMenuItem('select-all-nodes');
+			contextMenu.hideMenuItem('unselect-all-nodes');
+		  }
+		},
+		{
+		  id: 'select-all-edges',
+		  content: 'select all edges',
+		  selector: 'edge',
+		  coreAsWell: true,
+		  show: true,
+		  onClickFunction: function (event) {
+			selectAllOfTheSameType('edge');
+
+			contextMenu.hideMenuItem('select-all-edges');
+			contextMenu.showMenuItem('unselect-all-edges');
+		  }
+		},
+		{
+              id: 'unselect-all-edges',
+              content: 'unselect all edges',
+              selector: 'edge',
+              coreAsWell: true,
+              show: false,
+              onClickFunction: function (event) {
+                unselectAllOfTheSameType('edge');
+
+                contextMenu.showMenuItem('select-all-edges');
+                contextMenu.hideMenuItem('unselect-all-edges');
+              }
+            }
+	]
+}
+
+*/
