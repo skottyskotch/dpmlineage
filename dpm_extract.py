@@ -238,6 +238,7 @@ class PlwFormat:
 	
 	def __init__(self,one_format_text):
         # E7: now some uppercases
+		# print(one_format_text);
 		regexp = regex.compile(b':TABLE-DEF (.*)',regex.I)
 		format_table_def = regexp.findall(one_format_text)[0]
 		regexp = regex.compile(b':NAME "([^"]*)"')
@@ -343,6 +344,8 @@ def Process_classes(dpm_text_bin):
 			if regex.search(b':dump-version',each[0]):
 				regexp = regex.compile(rb':dump-version :([^\)]*)')
 				# print('DUMP VERSION: ' + regexp.findall(each[0])[0].decode('ascii'))
+			elif regex.search(b':encryption-signature',each[0]):
+				pass
 			else:
 				my_format = PlwFormat(each[0])
 				
@@ -684,7 +687,8 @@ def main():
 	args = parser.parse_args()
 	
 	# read the input
-	outputPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),'output')
+	outputPath = os.path.join(os.path.dirname(args.dpmFile),'output')
+	os.makedirs(outputPath, exist_ok=True)
 	dpmText = b''
 	with gzip.open(args.dpmFile, 'rb') as dpmFile:
 		dpmText = dpmFile.read()

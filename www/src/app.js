@@ -136,11 +136,12 @@ function isolateNode(targetNode) {
 	}
 } 
 
-function showThenLayout(elt, layoutOptions) {
-	let connectedElts = clickedNode.neighborhood();
-	let visibleElts = connectedElts.add(clickedNode);
+function showThenLayout(elt = clickedNode, layoutOptions) {
+	let connectedElts = elt.neighborhood();
+	let visibleElts = connectedElts.add(elt);
 	visibleElts.show();
-	visibleElts.layout(layoutOptions).run({name: 'circle', animate: true});
+	// visibleElts.layout(layoutOptions).run({name: 'circle', animate: true});
+	cy.nodes(':visible').layout(layoutOptions).run({name: 'circle', animate: true});
 }
 
 function discoverNodes(targetNode) {
@@ -151,6 +152,16 @@ function discoverNodes(targetNode) {
 		.then(data => addGraph(data))
 		.then(() => showThenLayout(targetNode, {name: 'circle', animate: true}));
 		// .then(() => colorNodesOnClick());
+	}
+}
+
+function discoverNodesFromSeveral(targetNodesIds){
+	if (targetNodesIds.length > 0) {
+		let ids = targetNodesIds.join(",");
+		fetchData('graph-data/nodes', 'db', dbSelector.value, 'id', ids)
+		.then(data => graphData(data))
+		.then(data => addGraph(data))
+		.then(() => showThenLayout(cy.nodes(':selected')[0], {name: 'circle', animate: true}));
 	}
 }
 

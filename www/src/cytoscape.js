@@ -1,5 +1,132 @@
 let clickedNode = null;
-let contextMenu = null;
+let defaultMenuItems = [
+	{	id: 'select-neighborood',
+		content: 'Select all neighbors',
+		selector: 'node',
+		coreAsWell: true,
+		show: true,
+		onClickFunction: function (event) {
+			if (event.target.isNode()) {
+				cy.$(':selected').unselect();
+				event.target.neighborhood('node').select();
+				event.target.select();
+			}
+		},
+		hasTrailingDivider: false,
+		submenu: [
+			{
+				id: 'select-neighborood-level1',
+				content: '...and neighbors of neighbors',
+				onClickFunction: function (event) {
+					if (event.target.isNode()){
+						cy.nodes(':selected').map(ele => ele.neighborhood('node').select());
+					}
+				}
+			}
+		]
+	},
+	{	id: 'isolate-node',
+		content: 'Isolate node',
+		selector: 'node',
+		coreAsWell: true,
+		show: false,
+		onClickFunction: function (event) {
+			if (event.target.isNode()) isolateNode(event.target);
+		},
+		hasTrailingDivider: false
+	},
+	{	id: 'unhide-connections',
+		content: 'Unhide connections',
+		selector: 'node',
+		coreAsWell: true,
+		show: false,
+		onClickFunction: function(event) {
+			if(event.target.isNode()) unhideConnections(event.target);
+		},
+		hasTrailingDivider: false
+	},
+	{	id: 'discover-nodes-one',
+		content: 'Discover from this node',
+		selector: 'node',
+		coreAsWell: true,
+		show: true,
+		onClickFunction: function(event) {
+			discoverNodes(event.target);
+		},
+		hasTrailingDivider: true
+	},
+	{	id: 'discover-nodes-some',
+		content: 'Discover from those nodes',
+		selector: 'node',
+		coreAsWell: true,
+		show: true,
+		onClickFunction: function(event) {
+			discoverNodesFromSeveral(cy.nodes(':selected').map(ele => ele.id()));
+		},
+		hasTrailingDivider: true
+	},
+	{	id: 'draw-tableObjects-graph',
+		content: 'Graph table objects',
+		selector: 'node',
+		coreAsWell: true,
+		show: false,
+		onClickFunction: function(event) {
+			if(event.target.isNode() && event.target.attr('class') == 'tableDef') runTableGraph(event.target.id());
+		},
+		hasTrailingDivider: false
+	},
+	{	id: 'hide-selected',
+		content: 'Hide selected',
+		selector: 'node',
+		coreAsWell: true,
+		show: true,
+		onClickFunction: function(event) {
+			cy.nodes(':selected').map(ele => ele.hide());
+		},
+		hasTrailingDivider: false
+	},
+	{	id: 'hide-other',
+		content: 'Hide not selected',
+		selector: 'node',
+		coreAsWell: true,
+		show: true,
+		onClickFunction: function(event) {
+			cy.nodes().not(':selected').map(ele => ele.hide());
+		},
+		hasTrailingDivider: false
+	},
+	{	id: 'unhide-all',
+		content: 'Unhide all nodes',
+		selector: 'node',
+		coreAsWell: true,
+		show: true,
+		onClickFunction: function(event) {
+			cy.nodes(':hidden').map(ele => ele.show());
+		},
+		hasTrailingDivider: true
+	},
+	{	id: 'subselect',
+		content: 'Subselection',
+		selector: 'node',
+		coreAsWell: true,
+		show: true,
+		onClickFunction: function(event) {
+			cy.nodes(':hidden').map(ele => ele.show());
+		},
+		hasTrailingDivider: false,
+		submenu: [
+			{
+				id: 'select-neighborood-level1',
+				content: '...and neighbors of neighbors',
+				onClickFunction: function (event) {
+					if (event.target.isNode()){
+						cy.nodes(':selected').map(ele => ele.neighborhood('node').select());
+					}
+				}
+			}
+		]
+	}
+];
 
 function graphData(data) {
 	const sClass = data.class;
@@ -87,7 +214,19 @@ function graphData(data) {
 			}
 		}
 	];
-	const layout = {name: 'circle'};
+	// const layout = {name: 'circle'};
+	const layout = {
+		name: 'concentric',
+		concentric: function(node) {
+		  // retourne une valeur de "niveau" (plus élevé = plus proche du centre)
+		  return node.data('type'); // ou tout autre attribut
+		},
+		levelWidth: function(nodes) {
+		  return 1; // combien de groupes différents avant de créer un nouveau cercle
+		},
+		spacingFactor: 1.5,
+		animate: true
+	}
 	return [nodes, edges, style, layout];
 }
 
@@ -102,68 +241,8 @@ function buildGraph(data) {
 	
 	cy.on('cxttap', onRightClick);
 	
-	contextMenu = cy.contextMenus({
-		menuItems: [
-			{
-				id: 'select-neighborood',
-				content: 'Select all neighbors',
-				selector: 'node',
-				coreAsWell: true,
-				show: true,
-				onClickFunction: function (event) {
-					if (event.target.isNode()) {
-						cy.$(':selected').unselect();
-						event.target.neighborhood('node').select();
-						event.target.select();
-					}
-				},
-				hasTrailingDivider: false
-			},
-			{
-				id: 'isolate-node',
-				content: 'Isolate node',
-				selector: 'node',
-				coreAsWell: true,
-				show: true,
-				onClickFunction: function (event) {
-					if (event.target.isNode()) isolateNode(event.target);
-				},
-				hasTrailingDivider: false
-			},
-			{
-				id: 'unhide-connections',
-				content: 'Unhide connections',
-				selector: 'node',
-				coreAsWell: true,
-				show: true,
-				onClickFunction: function(event) {
-					if(event.target.isNode()) unhideConnections(event.target);
-				},
-				hasTrailingDivider: false
-			},
-			{
-				id: 'discover-nodes',
-				content: 'Discover nodes',
-				selector: 'node',
-				coreAsWell: true,
-				show: true,
-				onClickFunction: function(event) {
-					if(event.target.isNode()) discoverNodes(event.target);
-				},
-				hasTrailingDivider: true
-			},
-			{
-				id: 'draw-object-graph',
-				content: 'Draw object graph',
-				selector: 'node',
-				coreAsWell: true,
-				show: true,
-				onClickFunction: function(event) {
-					if(event.target.isNode() && event.target.attr('class') == 'tableDef') runTableGraph(event.target.id());
-				},
-				hasTrailingDivider: false
-			}
-		]
+	cy.contextMenuInstance = cy.contextMenus({
+		menuItems: defaultMenuItems
 	});
 	
 	if (objectSelected != null) activeCenterButton(objectSelected);
@@ -222,20 +301,34 @@ function onClickNode(evt) {
 	}
 }
 
-function onRightClick(event){
-	contextMenu.hideMenuItem('select-neighborood');
-	contextMenu.hideMenuItem('isolate-node');
-	contextMenu.hideMenuItem('unhide-connections');
-	contextMenu.hideMenuItem('draw-object-graph');
-	
-	if (event.target != cy && event.target.isNode()) {
-		const node = event.target;
-		if (!neighborhoodAlreadySelected(node)) contextMenu.showMenuItem('select-neighborood');
-		if (!alreadyIsolated(node)) contextMenu.showMenuItem('isolate-node');
-		if (!alreadyDisplayed(node)) contextMenu.showMenuItem('unhide-connections');
-		if (node.attr('class') == 'tableDef') contextMenu.showMenuItem('draw-object-graph');
+function onRightClick(event){	
+	if (cy.contextMenuInstance.isActive()) {
+		cy.contextMenuInstance.hideMenuItem('select-neighborood');
+		cy.contextMenuInstance.hideMenuItem('isolate-node');
+		cy.contextMenuInstance.hideMenuItem('unhide-connections');
+		cy.contextMenuInstance.hideMenuItem('draw-tableObjects-graph');
+		cy.contextMenuInstance.hideMenuItem('discover-nodes-one');
+		cy.contextMenuInstance.hideMenuItem('discover-nodes-some');
+		cy.contextMenuInstance.hideMenuItem('unhide-all');
+		cy.contextMenuInstance.hideMenuItem('hide-other');
+		cy.contextMenuInstance.hideMenuItem('hide-selected');
+		
+		if (event.target != cy && event.target.isNode()) {
+			const node = event.target;
+			// if (!neighborhoodAlreadySelected(node)) 
+				cy.contextMenuInstance.showMenuItem('select-neighborood');
+			if (!alreadyIsolated(node)) cy.contextMenuInstance.showMenuItem('isolate-node');
+			if (!alreadyDiscovered(node)) cy.contextMenuInstance.showMenuItem('unhide-connections');
+			if (node.attr('class') == 'tableDef') cy.contextMenuInstance.showMenuItem('draw-tableObjects-graph');
+			if (node.isNode()) cy.contextMenuInstance.showMenuItem('discover-nodes-one');
+			if (node.isNode() && cy.nodes(':selected').length > 1) cy.contextMenuInstance.showMenuItem('discover-nodes-some');
+		}
+		else if (event.target == cy){
+			if (cy.nodes(':hidden').length > 0) cy.contextMenuInstance.showMenuItem('unhide-all');
+			if (cy.nodes(':selected').length > 0) cy.contextMenuInstance.showMenuItem('hide-selected');
+			if (cy.nodes(':selected').length > 0 && cy.nodes(':visible').some(ele => !cy.nodes(':selected').contains(ele))) cy.contextMenuInstance.showMenuItem('hide-other');
+		}
 	}
-
 }
 
 function neighborhoodAlreadySelected(node){
@@ -253,7 +346,7 @@ function alreadyIsolated(node) {
 	return allMatch;
 }
 
-function alreadyDisplayed(node) {
+function alreadyDiscovered(node) {
 	const hasHiddenEdge = node.connectedEdges().some(edge => edge.hidden());
 	const hasHiddenNeighbor = node.neighborhood('node').some(neighbor => neighbor.hidden());
 	return !(hasHiddenEdge || hasHiddenNeighbor);
@@ -436,169 +529,9 @@ function displayInfoObject(data){
     newInfo.appendChild(newDiv);
 }
 
-/*
-       var contextMenu = cy.contextMenus(
-{
-	menuItems: [
-		{
-		  id: 'remove',
-		  content: 'remove',
-		  tooltipText: 'remove',
-		  image: {src: "assets/remove.svg", width: 12, height: 12, x: 6, y: 4},
-		  selector: 'node, edge',
-		  onClickFunction: function (event) {
-			var target = event.target || event.cyTarget;
-			removed = target.remove();
-
-			contextMenu.showMenuItem('undo-last-remove');
-		  },
-		  hasTrailingDivider: true
-		},
-		{
-		  id: 'undo-last-remove',
-		  content: 'undo last remove',
-		  selector: 'node, edge',
-		  show: false,
-		  coreAsWell: true,
-		  onClickFunction: function (event) {
-			if (removed) {
-			  removed.restore();
-			}
-			contextMenu.hideMenuItem('undo-last-remove');
-		  },
-		  hasTrailingDivider: true
-		},
-		{
-		  id: 'color',
-		  content: 'change color',
-		  tooltipText: 'change color',
-		  selector: 'node',
-		  hasTrailingDivider: true,
-		  submenu: [
-			{
-			  id: 'color-blue',
-			  content: 'blue',
-			  tooltipText: 'blue',
-			  onClickFunction: function (event) {
-				let target = event.target || event.cyTarget;
-				target.style('background-color', 'blue');
-			  },
-			  submenu: [
-				{
-				  id: 'color-light-blue',
-				  content: 'light blue',
-				  tooltipText: 'light blue',
-				  onClickFunction: function (event) {
-					let target = event.target || event.cyTarget;
-					target.style('background-color', 'lightblue');
-				  },
-				},
-				{
-				  id: 'color-dark-blue',
-				  content: 'dark blue',
-				  tooltipText: 'dark blue',
-				  onClickFunction: function (event) {
-					let target = event.target || event.cyTarget;
-					target.style('background-color', 'darkblue');
-				  },
-				},
-			  ],
-			},
-			{
-			  id: 'color-green',
-			  content: 'green',
-			  tooltipText: 'green',
-			  onClickFunction: function (event) {
-				let target = event.target || event.cyTarget;
-				target.style('background-color', 'green');
-			  },
-			},
-			{
-			  id: 'color-red',
-			  content: 'red',
-			  tooltipText: 'red',
-			  onClickFunction: function (event) {
-				let target = event.target || event.cyTarget;
-				target.style('background-color', 'red');
-			  },
-			},
-		  ]
-		},
-		{
-		  id: 'add-node',
-		  content: 'add node',
-		  tooltipText: 'add node',
-		  image: {src: "assets/add.svg", width: 12, height: 12, x: 6, y: 4},
-		  coreAsWell: true,
-		  onClickFunction: function (event) {
-			var data = {
-			  group: 'nodes'
-			};
-
-			var pos = event.position || event.cyPosition;
-
-			cy.add({
-			  data: data,
-			  position: {
-				x: pos.x,
-				y: pos.y
-			  }
-			});
-		  }
-		},
-		{
-		  id: 'select-all-nodes',
-		  content: 'select all nodes',
-		  selector: 'node',
-		  coreAsWell: true,
-		  show: true,
-		  onClickFunction: function (event) {
-			selectAllOfTheSameType('node');
-
-			contextMenu.hideMenuItem('select-all-nodes');
-			contextMenu.showMenuItem('unselect-all-nodes');
-		  }
-		},
-		{
-		  id: 'unselect-all-nodes',
-		  content: 'unselect all nodes',
-		  selector: 'node',
-		  coreAsWell: true,
-		  show: false,
-		  onClickFunction: function (event) {
-			unselectAllOfTheSameType('node');
-
-			contextMenu.showMenuItem('select-all-nodes');
-			contextMenu.hideMenuItem('unselect-all-nodes');
-		  }
-		},
-		{
-		  id: 'select-all-edges',
-		  content: 'select all edges',
-		  selector: 'edge',
-		  coreAsWell: true,
-		  show: true,
-		  onClickFunction: function (event) {
-			selectAllOfTheSameType('edge');
-
-			contextMenu.hideMenuItem('select-all-edges');
-			contextMenu.showMenuItem('unselect-all-edges');
-		  }
-		},
-		{
-              id: 'unselect-all-edges',
-              content: 'unselect all edges',
-              selector: 'edge',
-              coreAsWell: true,
-              show: false,
-              onClickFunction: function (event) {
-                unselectAllOfTheSameType('edge');
-
-                contextMenu.showMenuItem('select-all-edges');
-                contextMenu.hideMenuItem('unselect-all-edges');
-              }
-            }
-	]
+function applyLayoutOnSelection(layout) {
+	const typesSelected = [...new Set(cy.nodes(':selected').map(node => node.data('type')))];
+	typesSelected.forEach((type) => {
+		cy.nodes(':selected').filter('[type = "' + type + '"]').layout(layout).run();
+	});
 }
-
-*/

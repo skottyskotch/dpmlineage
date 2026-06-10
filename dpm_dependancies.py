@@ -419,10 +419,10 @@ def searchDependanciesForOne(obj):
 					for attribute, string in otherObj.attributesForSearch.items():
 						if obj.format.searchedByONB:
 							if obj.onb in string:
-								deps.append(ObjDependancy(obj, otherObj, attribute, True))
+								deps.append(ObjDependancy(otherObj, obj, attribute, True))
 						if obj.format.searchedByNAME:
 							if obj.name in string:
-								deps.append(ObjDependancy(obj, otherObj, attribute, False))
+								deps.append(ObjDependancy(otherObj, obj, attribute, False))
 				progress.update(sub_task, description = "[green]Class " + plwFormat.table_def.decode('utf-8') + "...", advance=1)
 			progress.advance(main_task, 1)
 	for dep in deps:
@@ -498,12 +498,12 @@ def processDepLinks(globalIndex):
 				for caller in callers:
 					for attribute, value in caller.attributes.items():
 						if obj.onb in value:
-							ObjDependancy(obj, caller, attribute, True, '')
+							ObjDependancy(caller, obj, attribute, True, '')
 			if obj.format.searchedByNAME:
 				for caller in callers:
 					for attribute, value in caller.attributes.items():
 						if obj.name in value:
-							ObjDependancy(obj, caller, attribute, False, '')
+							ObjDependancy(caller, obj, attribute, False, '')
 			progress.advance(main_task, 1)
 
 ### dump csv
@@ -525,8 +525,8 @@ def dumpEdgesToCSV(outputPath, main_directory):
 					dep.right.id.decode('utf-8'),
 					dep.right.onb.decode('utf-8'),
 					dep.right.name.decode('utf-8'),
-					dep.right.format.table_def.decode('utf-8'),
 					dep.column.decode('utf-8'),
+					dep.right.format.table_def.decode('utf-8'),
 					str(not(dep.calledByOnb)),
 					str(dep.calledByOnb)
 				])

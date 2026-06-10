@@ -28,6 +28,8 @@ const sNodesFromOneTable = "select a.ID, a.NAME, a.TYPE, a.ATTRIBUTES, a.DATA, c
 const sEdgesFromOneTable = "with cte as (select ID from nodes where type in ('{0}'))select a.SOURCE, b.TYPE as SOURCE_TYPE, a.TARGET, c.TYPE as TARGET_TYPE, INATTRIBUTE, BYNAME from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where SOURCE in (select ID from cte) and TARGET in (select ID from cte);";
 const sNodesFromOneNode = "with cte as (select a.SOURCE, a.TARGET from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where a.SOURCE like '%{0}%' or a.TARGET like '%{0}%') select ID, NAME, TYPE, ATTRIBUTES, DATA from nodes where ID = '{0}' or ID in (select SOURCE from cte) or ID in (select TARGET from cte);";
 const sEdgesFromOneNode = "select a.SOURCE, b.TYPE as SOURCE_TYPE, a.TARGET, c.TYPE as TARGET_TYPE, INATTRIBUTE, BYNAME from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where a.SOURCE = '{0}' or a.TARGET = '{0}'";
+const sNodesFromSomeNodes = "with cte as (select a.SOURCE, a.TARGET from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where a.SOURCE in ({0}) or a.TARGET in ({0})) select ID, NAME, TYPE, ATTRIBUTES, DATA from nodes where ID in ({0}) or ID in (select SOURCE from cte) or ID in (select TARGET from cte);";
+const sEdgesFromSomeNodes = "select a.SOURCE, b.TYPE as SOURCE_TYPE, a.TARGET, c.TYPE as TARGET_TYPE, INATTRIBUTE, BYNAME from edges a left join nodes b on a.source = b.ID left join nodes c on a.target = c.ID where a.SOURCE in({0}) or a.TARGET in ({0});";
 // completion
 const sNodesFromFile = "with fileid as (select id from nodes where name = '{0}'), nodeids as (SELECT target AS id FROM edges WHERE source = (SELECT id FROM fileid) UNION SELECT source AS id FROM edges WHERE target = (SELECT id FROM fileid) UNION SELECT id FROM fileid) SELECT ID, NAME, TYPE, ATTRIBUTES, DATA from nodes where id in (select id from nodeids);";
 const sEdgesFromFile = "with fileid as (select id from nodes where name = '{0}'), nodeids as (SELECT target AS id FROM edges WHERE source = (SELECT id FROM fileid) UNION SELECT source AS id FROM edges WHERE target = (SELECT id FROM fileid) UNION SELECT id FROM fileid) SELECT e.source, b.type as source_type, e.target, c.type as target_type, e.INATTRIBUTE, BYNAME FROM edges e left join nodes b on e.source = b.id left join nodes c on e.target = c.id WHERE e.source IN (SELECT id FROM nodeids) AND e.target IN (SELECT id FROM nodeids);";
@@ -43,7 +45,7 @@ const sQueryTableDefObjectNodes = "with tablelinks as (SELECT n1.type AS SOURCE,
 const sQueryTableDefObjectEdges = "SELECT n1.type AS SOURCE, n2.type AS TARGET, COUNT(*) AS number_of_edges FROM edges l JOIN nodes n1 ON l.source = n1.id JOIN nodes n2 ON l.target = n2.id WHERE (n1.type = '{0}' OR n2.type = '{0}') GROUP BY n1.type, n2.type ORDER BY number_of_edges DESC;"
 // info on click
 
-
+// const dbFolder = 'C:/Users/AlexandreHENRY/Documents/output/';
 const dbFolder = '../output/';
 let hDatabases = {};
 
@@ -182,9 +184,14 @@ app.get('/api/graph-data/nodes', (req,res) => {
 	if (req.query.db) {
 		let sQueryNodes =  sNodesFull;
 		let sQueryEdges =  sEdgeFull;
-		if (req.query.id) {
+		if (req.query.id && req.query.id.search(",") == -1) {
 			sQueryNodes = format(sNodesFromOneNode, req.query.id);
 			sQueryEdges = format(sEdgesFromOneNode, req.query.id);
+		}
+		else if (req.query.id && req.query.id.search(",") != -1) {
+			const ids = req.query.id.split(",").map(ele => "'"+ele+"'").join(",");
+			sQueryNodes = format(sNodesFromSomeNodes, ids);
+			sQueryEdges = format(sEdgesFromSomeNodes, ids);
 		}
 		else if (req.query.file) {
 			sQueryNodes = format(sNodesFromFile, req.query.file);
